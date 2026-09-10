@@ -18,9 +18,6 @@ class MYPROJECT3_API UChunkGeneratorSubsystem : public UGameInstanceSubsystem
 public:
 
 	UFUNCTION(BlueprintCallable)
-	void GenerateHeightMap(int32 NewSeed);
-
-	UFUNCTION(BlueprintCallable)
 	void SetChunkGeneratorSetup(const FChunkGeneratorSetup& InChunkSetup);
 	
 	UFUNCTION(BlueprintPure)
@@ -47,7 +44,5 @@ private:
 	TMap<FIntVector, AChunkActor*> ChunkActors;
 	
 	FChunkGeneratorSetup ChunkGeneratorSetup;
-	
-	int32 RandomSeed = 0;
 	
 };

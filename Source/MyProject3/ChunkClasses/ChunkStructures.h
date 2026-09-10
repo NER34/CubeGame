@@ -6,6 +6,14 @@
 #include "UObject/Object.h"
 #include "ChunkStructures.generated.h"
 
+UENUM(BlueprintType)
+enum class EBlockType : uint8
+{
+	Air = 0,
+	Stone,
+	Grass,
+	Snow
+};
 
 USTRUCT(BlueprintType)
 struct FChunkSetup
@@ -16,7 +24,10 @@ struct FChunkSetup
 	FVector BlockSize = {50.0, 50.0, 50.0};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntVector ChunkSize = {32, 32, 32};
+	FIntVector ChunkSize = {8, 8, 8};
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 RandomSeed = 0;
 	
 };
 

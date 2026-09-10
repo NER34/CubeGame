@@ -6,11 +6,6 @@
 #include "ChunkActor.h"
 
 
-void UChunkGeneratorSubsystem::GenerateHeightMap(int32 NewSeed)
-{
-	
-}
-
 void UChunkGeneratorSubsystem::SetChunkGeneratorSetup(const FChunkGeneratorSetup& InChunkSetup)
 {
 	ChunkGeneratorSetup = InChunkSetup;
@@ -28,7 +23,8 @@ void UChunkGeneratorSubsystem::LoadChunk(UObject* WorldContext, TSubclassOf<AChu
 		FVector ChunkRealPos = CalculateChunkRealPosition(ChunkPos);
 		AActor* SpawnedActor = GetWorld()->SpawnActor(ChunkActorClass, &ChunkRealPos);
 		check(SpawnedActor != nullptr);
-		ChunkActors.Add(ChunkPos, static_cast<AChunkActor*>(SpawnedActor));
+		auto* ChunkActor = ChunkActors.Add(ChunkPos, static_cast<AChunkActor*>(SpawnedActor));
+		ChunkActor->Initialize(ChunkGeneratorSetup.ChunkSetup);
 	}
 }
 
