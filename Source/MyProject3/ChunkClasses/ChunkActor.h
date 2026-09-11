@@ -8,6 +8,8 @@
 #include "MyProject3/ThirdParty/FastNoiseLite.h"
 #include "ChunkActor.generated.h"
 
+class UInstancedStaticMeshComponent;
+
 UCLASS()
 class MYPROJECT3_API AChunkActor : public AActor
 {
@@ -25,6 +27,7 @@ public:
 
 protected:
 	
+	void GenerateInstances();
 	void GenerateChunkData();
 	EBlockType GetBlockTypeByHeight(float Height);
 	
@@ -46,6 +49,11 @@ protected:
 	virtual void BeginPlay() override;
 	
 private:
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInstancedStaticMeshComponent> InstancedStaticMeshComponent;
+	
+	TMap<int32, FPrimitiveInstanceId> VisibleInstances;
 
 	FChunkSetup ChunkSetup;
 	

@@ -1,6 +1,7 @@
 ﻿
 #include "ChunkActor.h"
 
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Field/FieldSystemNoiseAlgo.h"
 
 
@@ -8,7 +9,10 @@ AChunkActor::AChunkActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
-	
+	SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent")));
+
+	InstancedStaticMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedStaticMeshComponent"));
+	InstancedStaticMeshComponent->SetupAttachment(GetRootComponent());
 }
 
 void AChunkActor::BeginPlay()
@@ -36,12 +40,32 @@ void AChunkActor::Initialize_Implementation(const FChunkSetup& InChunkSetup)
 	NoiseGenerator.SetFractalWeightedStrength(0.38f);
 	
 	GenerateChunkData();
+	
+	GenerateInstances();
+}
+
+void AChunkActor::GenerateInstances()
+{
+	for (int ID = 0; ID < ChunkData.Num(); ID++)
+	{
+		if (ChunkData[ID] != EBlockType::Air)
+		{
+			FVector BlockLocation = GetBlockRealPos(GetBlockPosFromID(ID));
+			
+			FTransform InstanceTransform;
+			InstanceTransform.SetLocation(BlockLocation);
+			InstanceTransform.SetScale3D(ChunkSetup.BlockSize / 100.f);	
+			
+			auto PrimitiveInstanceId = InstancedStaticMeshComponent->AddInstanceById(InstanceTransform, true);
+			VisibleInstances.Add(ID, PrimitiveInstanceId);
+		}
+	}
 }
 
 void AChunkActor::GenerateChunkData()
 {	
-	//ParallelFor(ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y, [this](int32 ID)
-	for (int32 ID = 0; ID < ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y; ID++)
+	ParallelFor(ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y, [this](int32 ID)
+	//for (int32 ID = 0; ID < ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y; ID++)
 	{
 		int32 X = ID % ChunkSetup.ChunkSize.X;
 		int32 Y = ID / ChunkSetup.ChunkSize.X;
@@ -61,7 +85,7 @@ void AChunkActor::GenerateChunkData()
 			ChunkData[GetBlockIDFromPos({X, Y, Z})] = GetBlockTypeByHeight(CurrentZHeight / ZHeight);
 		}
 	}
-	//);
+	);
 }
 
 EBlockType AChunkActor::GetBlockTypeByHeight(float Height)
