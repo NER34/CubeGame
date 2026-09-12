@@ -22,8 +22,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	
 	UFUNCTION(BlueprintNativeEvent)
-	void Initialize(const FChunkSetup&  InChunkSetup);
-	virtual void Initialize_Implementation(const FChunkSetup& InChunkSetup);
+	void Initialize(const FChunkSetup& InChunkSetup, FIntVector InChunkPos);
+	virtual void Initialize_Implementation(const FChunkSetup& InChunkSetup, FIntVector InChunkPos);
 	
 	UFUNCTION(BlueprintPure)
 	const FChunkSetup& GetChunkSetup() const;
@@ -35,13 +35,16 @@ public:
 	EBlockType GetBlockType(FIntVector Pos) const;
 	
 	UFUNCTION(BlueprintPure)
-	bool IsBlockPosInChunkBounds(FIntVector BlockPos);
+	bool IsBlockPosInChunkBounds(FIntVector BlockPos) const;
 	
 protected:
+	
+	void CreateInstance(int32 BlockID);
 	
 	void GenerateInstances();
 	void GenerateChunkData();
 	void UpdateInstancesVisibility(FIntVector ModifiedBlock);
+	void UpdateNeighborInstancesVisibility(FIntVector ModifiedBlock, FIntVector Delta);
 	EBlockType GetBlockTypeByHeight(float Height);
 	
 	UFUNCTION(BlueprintPure)
@@ -71,6 +74,6 @@ private:
 	
 	TArray<EBlockType> ChunkData;
 	
-	
+	FIntVector ChunkPos;
 	
 };

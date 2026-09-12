@@ -12,7 +12,9 @@ enum class EBlockType : uint8
 	Air = 0,
 	Stone,
 	Grass,
-	Snow
+	Snow,
+	
+	None,
 };
 
 USTRUCT(BlueprintType)

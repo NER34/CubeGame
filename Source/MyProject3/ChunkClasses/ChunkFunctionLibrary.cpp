@@ -18,9 +18,9 @@ FVector UChunkFunctionLibrary::CalculateChunkRealPosition(const FChunkSetup& Chu
 FIntVector UChunkFunctionLibrary::GetChunkGridPosition(const FChunkSetup& ChunkSetup, FVector RealPos)
 {
 	return {
-		static_cast<int32>(RealPos.X / (ChunkSetup.ChunkSize.X * ChunkSetup.BlockSize.X)),
-		static_cast<int32>(RealPos.Y / (ChunkSetup.ChunkSize.Y * ChunkSetup.BlockSize.Y)),
-		static_cast<int32>(RealPos.Z / (ChunkSetup.ChunkSize.Z * ChunkSetup.BlockSize.Z)),
+		FMath::FloorToInt32(RealPos.X / (ChunkSetup.ChunkSize.X * ChunkSetup.BlockSize.X)),
+		FMath::FloorToInt32(RealPos.Y / (ChunkSetup.ChunkSize.Y * ChunkSetup.BlockSize.Y)),
+		FMath::FloorToInt32(RealPos.Z / (ChunkSetup.ChunkSize.Z * ChunkSetup.BlockSize.Z)),
 	};
 }
 

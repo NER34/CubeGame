@@ -25,7 +25,7 @@ void UChunkGeneratorSubsystem::LoadChunk(UObject* WorldContext, TSubclassOf<AChu
 		AActor* SpawnedActor = GetWorld()->SpawnActor(ChunkActorClass, &ChunkRealPos);
 		check(SpawnedActor != nullptr);
 		auto* ChunkActor = ChunkActors.Add(ChunkPos, static_cast<AChunkActor*>(SpawnedActor));
-		ChunkActor->Initialize(ChunkGeneratorSetup.ChunkSetup);
+		ChunkActor->Initialize(ChunkGeneratorSetup.ChunkSetup, ChunkPos);
 	}
 }
 
