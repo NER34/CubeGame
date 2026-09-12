@@ -30,10 +30,13 @@ public:
 	void UnloadChunk(FIntVector ChunkPos);
 	
 	UFUNCTION(BlueprintCallable)
-	FVector CalculateChunkRealPosition(FIntVector ChunkPos);
+	AChunkActor* GetChunkActor(FIntVector ChunkPos);
 	
 	UFUNCTION(BlueprintPure)
-	FIntVector GetChunkGridPosition(FVector RealPos);
+	FVector CalculateChunkRealPosition(FIntVector ChunkPos) const;
+	
+	UFUNCTION(BlueprintPure)
+	FIntVector GetChunkGridPosition(FVector RealPos) const;
 	
 	UFUNCTION(BlueprintPure)
 	bool IsChunkPosInBounds(FIntVector ChunkPos) const;

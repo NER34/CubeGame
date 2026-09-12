@@ -24,18 +24,28 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 	void Initialize(const FChunkSetup&  InChunkSetup);
 	virtual void Initialize_Implementation(const FChunkSetup& InChunkSetup);
-
+	
+	UFUNCTION(BlueprintPure)
+	const FChunkSetup& GetChunkSetup() const;
+	
+	UFUNCTION(BlueprintCallable)
+	void SetBlockType(EBlockType BlockType, FIntVector Pos);
+	
+	UFUNCTION(BlueprintPure)
+	EBlockType GetBlockType(FIntVector Pos) const;
+	
+	UFUNCTION(BlueprintPure)
+	bool IsBlockPosInChunkBounds(FIntVector BlockPos);
+	
 protected:
 	
 	void GenerateInstances();
 	void GenerateChunkData();
+	void UpdateInstancesVisibility(FIntVector ModifiedBlock);
 	EBlockType GetBlockTypeByHeight(float Height);
 	
 	UFUNCTION(BlueprintPure)
 	const TArray<EBlockType>& GetChunkData() const;
-	
-	UFUNCTION(BlueprintPure)
-	const FChunkSetup& GetChunkSetup() const;
 	
 	UFUNCTION(BlueprintPure)
 	int32 GetBlockIDFromPos(FIntVector Pos) const;
@@ -60,5 +70,7 @@ private:
 	FastNoiseLite NoiseGenerator;
 	
 	TArray<EBlockType> ChunkData;
+	
+	
 	
 };

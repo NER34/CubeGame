@@ -4,6 +4,7 @@
 #include "ChunkGeneratorSubsystem.h"
 
 #include "ChunkActor.h"
+#include "ChunkFunctionLibrary.h"
 
 
 void UChunkGeneratorSubsystem::SetChunkGeneratorSetup(const FChunkGeneratorSetup& InChunkSetup)
@@ -37,31 +38,23 @@ void UChunkGeneratorSubsystem::UnloadChunk(FIntVector ChunkPos)
 	}
 }
 
-FVector UChunkGeneratorSubsystem::CalculateChunkRealPosition(FIntVector ChunkPos)
+AChunkActor* UChunkGeneratorSubsystem::GetChunkActor(FIntVector ChunkPos)
 {
-	const auto& ChunkSetup = ChunkGeneratorSetup.ChunkSetup;
-	return {
-		ChunkSetup.BlockSize.X * ChunkSetup.ChunkSize.X * ChunkPos.X,
-		ChunkSetup.BlockSize.Y * ChunkSetup.ChunkSize.Y * ChunkPos.Y,
-		ChunkSetup.BlockSize.Z * ChunkSetup.ChunkSize.Z * ChunkPos.Z,
-	};
+	auto** ChunkActor = ChunkActors.Find(ChunkPos); 
+	return ChunkActor ? *ChunkActor : nullptr;
 }
 
-FIntVector UChunkGeneratorSubsystem::GetChunkGridPosition(FVector RealPos)
+FVector UChunkGeneratorSubsystem::CalculateChunkRealPosition(FIntVector ChunkPos) const
 {
-	const auto& ChunkSetup = ChunkGeneratorSetup.ChunkSetup;
-	return {
-		static_cast<int32>(RealPos.X / (ChunkSetup.ChunkSize.X * ChunkSetup.BlockSize.X)),
-		static_cast<int32>(RealPos.Y / (ChunkSetup.ChunkSize.Y * ChunkSetup.BlockSize.Y)),
-		static_cast<int32>(RealPos.Z / (ChunkSetup.ChunkSize.Z * ChunkSetup.BlockSize.Z)),
-	};
+	return UChunkFunctionLibrary::CalculateChunkRealPosition(ChunkGeneratorSetup.ChunkSetup, ChunkPos);
+}
+
+FIntVector UChunkGeneratorSubsystem::GetChunkGridPosition(FVector RealPos) const
+{
+	return UChunkFunctionLibrary::GetChunkGridPosition(ChunkGeneratorSetup.ChunkSetup, RealPos);
 }
 
 bool UChunkGeneratorSubsystem::IsChunkPosInBounds(FIntVector ChunkPos) const
 {
-	const auto& Min = ChunkGeneratorSetup.ChunkBoundsMin;
-	const auto& Max = ChunkGeneratorSetup.ChunkBoundsMax;
-	return Min.X <= ChunkPos.X && ChunkPos.X <= Max.X
-		&& Min.Y <= ChunkPos.Y && ChunkPos.Y <= Max.Y
-		&& Min.Z <= ChunkPos.Z && ChunkPos.Z <= Max.Z;
+	return UChunkFunctionLibrary::IsChunkPosInBounds(ChunkGeneratorSetup, ChunkPos);
 }
