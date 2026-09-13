@@ -1,12 +1,12 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ChunkFunctionLibrary.h"
+#include "ChunkHelperFunctions.h"
 
 #include "ChunkActor.h"
 
 
-FVector UChunkFunctionLibrary::CalculateChunkRealPosition(const FChunkSetup& ChunkSetup, FIntVector ChunkPos)
+FVector UChunkHelperFunctions::CalculateChunkRealPosition(const FChunkSetup& ChunkSetup, FIntVector ChunkPos)
 {
 	return {
 		ChunkSetup.BlockSize.X * ChunkSetup.ChunkSize.X * ChunkPos.X,
@@ -15,7 +15,7 @@ FVector UChunkFunctionLibrary::CalculateChunkRealPosition(const FChunkSetup& Chu
 	};	
 }
 
-FIntVector UChunkFunctionLibrary::GetChunkGridPosition(const FChunkSetup& ChunkSetup, FVector RealPos)
+FIntVector UChunkHelperFunctions::GetChunkGridPosition(const FChunkSetup& ChunkSetup, FVector RealPos)
 {
 	return {
 		FMath::FloorToInt32(RealPos.X / (ChunkSetup.ChunkSize.X * ChunkSetup.BlockSize.X)),
@@ -24,7 +24,7 @@ FIntVector UChunkFunctionLibrary::GetChunkGridPosition(const FChunkSetup& ChunkS
 	};
 }
 
-bool UChunkFunctionLibrary::IsChunkPosInBounds(const FChunkGeneratorSetup& GeneratorSetup, FIntVector ChunkPos)
+bool UChunkHelperFunctions::IsChunkPosInBounds(const FChunkGeneratorSetup& GeneratorSetup, FIntVector ChunkPos)
 {
 	const auto& Min = GeneratorSetup.ChunkBoundsMin;
 	const auto& Max = GeneratorSetup.ChunkBoundsMax;
@@ -33,14 +33,14 @@ bool UChunkFunctionLibrary::IsChunkPosInBounds(const FChunkGeneratorSetup& Gener
 		&& Min.Z <= ChunkPos.Z && ChunkPos.Z <= Max.Z;
 }
 
-int32 UChunkFunctionLibrary::GetBlockIDFromPos(const FChunkSetup& ChunkSetup, FIntVector Pos)
+int32 UChunkHelperFunctions::GetBlockIDFromPos(const FChunkSetup& ChunkSetup, FIntVector Pos)
 {
 	return Pos.Z 
 		+ ChunkSetup.ChunkSize.Z * Pos.X 
 		+ ChunkSetup.ChunkSize.Z * ChunkSetup.ChunkSize.X * Pos.Y;
 }
 
-FIntVector UChunkFunctionLibrary::GetBlockPosFromID(const FChunkSetup& ChunkSetup, int32 ID)
+FIntVector UChunkHelperFunctions::GetBlockPosFromID(const FChunkSetup& ChunkSetup, int32 ID)
 {
 	int32 Z = ID % ChunkSetup.ChunkSize.Z;
 	int32 XY = ID / ChunkSetup.ChunkSize.Z;
@@ -49,7 +49,7 @@ FIntVector UChunkFunctionLibrary::GetBlockPosFromID(const FChunkSetup& ChunkSetu
 	return {X, Y, Z};
 }
 
-FVector UChunkFunctionLibrary::GetBlockRealPos(const AChunkActor* ChunkActor, const FIntVector& Pos)
+FVector UChunkHelperFunctions::GetBlockRealPos(const AChunkActor* ChunkActor, const FIntVector& Pos)
 {
 	FVector ChunkLocation = ChunkActor->GetActorLocation();
 	const auto& ChunkSetup = ChunkActor->GetChunkSetup();
@@ -60,7 +60,7 @@ FVector UChunkFunctionLibrary::GetBlockRealPos(const AChunkActor* ChunkActor, co
 	};
 }
 
-FIntVector UChunkFunctionLibrary::GetBlockGridPos(const AChunkActor* ChunkActor, const FVector& RealPos)
+FIntVector UChunkHelperFunctions::GetBlockGridPos(const AChunkActor* ChunkActor, const FVector& RealPos)
 {
 	const auto& ChunkSetup = ChunkActor->GetChunkSetup();
 	FVector RelativeBlockLocation = RealPos - ChunkActor->GetActorLocation();
@@ -73,16 +73,33 @@ FIntVector UChunkFunctionLibrary::GetBlockGridPos(const AChunkActor* ChunkActor,
 		);
 }
 
-FVector UChunkFunctionLibrary::ToVector(const FIntVector& IntVec)
+FVector UChunkHelperFunctions::ToVector(const FIntVector& IntVec)
 {
 	return { (double)IntVec.X, (double)IntVec.Y, (double)IntVec.Z };
 }
 
-FIntVector UChunkFunctionLibrary::ToIntVector_Floor(const FVector& Vec)
+FIntVector UChunkHelperFunctions::ToIntVector_Floor(const FVector& Vec)
 {
 	return { 
 		FMath::FloorToInt32(Vec.X),
 		FMath::FloorToInt32(Vec.Y),
 		FMath::FloorToInt32(Vec.Z)
 	};
+}
+
+float UChunkHelperFunctions::EncodeBlockInstanceData(const FBlockInstanceData& BlockInstanceData)
+{
+	float Data;
+	uint8* DataBytes = (uint8*)&Data;
+
+	const uint8 BlockTypeByte = static_cast<uint8>(BlockInstanceData.BlockType);
+	const uint8 DestructionAlphaByte = static_cast<uint8>(
+		FMath::Clamp(FMath::RoundToInt(BlockInstanceData.DestructionAlpha * 255.0f), 0, 255)
+	);
+
+	DataBytes[0] = BlockTypeByte;
+	DataBytes[1] = DestructionAlphaByte;
+	DataBytes[2] = BlockInstanceData.bHighlighted;
+
+	return Data;
 }

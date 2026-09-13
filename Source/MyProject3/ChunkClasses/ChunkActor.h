@@ -37,6 +37,12 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool IsBlockPosInChunkBounds(FIntVector BlockPos) const;
 	
+	UFUNCTION(BlueprintCallable)
+	void SetBlockDestructionAlpha(FIntVector BlockPos, float Alpha);
+	
+	UFUNCTION(BlueprintCallable)
+	void SetBlockHighlightFlag(FIntVector BlockPos, bool bHighlight);
+	
 protected:
 	
 	void CreateInstance(int32 BlockID);
@@ -66,7 +72,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInstancedStaticMeshComponent> InstancedStaticMeshComponent;
 	
-	TMap<int32, FPrimitiveInstanceId> VisibleInstances;
+	TMap<int32, FBlockInstanceData> VisibleInstances;
 
 	FChunkSetup ChunkSetup;
 	

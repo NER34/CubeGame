@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "ChunkStructures.h"
-#include "ChunkFunctionLibrary.generated.h"
+#include "ChunkHelperFunctions.generated.h"
 
 class AChunkActor;
 
 UCLASS()
-class MYPROJECT3_API UChunkFunctionLibrary : public UBlueprintFunctionLibrary
+class MYPROJECT3_API UChunkHelperFunctions : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 	
@@ -44,5 +44,8 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	static FIntVector ToIntVector_Floor(const FVector& Vec);
+	
+	UFUNCTION(BlueprintPure)
+	static float EncodeBlockInstanceData(const FBlockInstanceData& BlockInstanceData);
 	
 };

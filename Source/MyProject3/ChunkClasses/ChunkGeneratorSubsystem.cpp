@@ -4,7 +4,7 @@
 #include "ChunkGeneratorSubsystem.h"
 
 #include "ChunkActor.h"
-#include "ChunkFunctionLibrary.h"
+#include "ChunkHelperFunctions.h"
 
 
 void UChunkGeneratorSubsystem::SetChunkGeneratorSetup(const FChunkGeneratorSetup& InChunkSetup)
@@ -46,15 +46,15 @@ AChunkActor* UChunkGeneratorSubsystem::GetChunkActor(FIntVector ChunkPos)
 
 FVector UChunkGeneratorSubsystem::CalculateChunkRealPosition(FIntVector ChunkPos) const
 {
-	return UChunkFunctionLibrary::CalculateChunkRealPosition(ChunkGeneratorSetup.ChunkSetup, ChunkPos);
+	return UChunkHelperFunctions::CalculateChunkRealPosition(ChunkGeneratorSetup.ChunkSetup, ChunkPos);
 }
 
 FIntVector UChunkGeneratorSubsystem::GetChunkGridPosition(FVector RealPos) const
 {
-	return UChunkFunctionLibrary::GetChunkGridPosition(ChunkGeneratorSetup.ChunkSetup, RealPos);
+	return UChunkHelperFunctions::GetChunkGridPosition(ChunkGeneratorSetup.ChunkSetup, RealPos);
 }
 
 bool UChunkGeneratorSubsystem::IsChunkPosInBounds(FIntVector ChunkPos) const
 {
-	return UChunkFunctionLibrary::IsChunkPosInBounds(ChunkGeneratorSetup, ChunkPos);
+	return UChunkHelperFunctions::IsChunkPosInBounds(ChunkGeneratorSetup, ChunkPos);
 }

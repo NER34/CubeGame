@@ -48,3 +48,22 @@ struct FChunkGeneratorSetup
 	FIntVector ChunkBoundsMax = {INT32_MAX, INT32_MAX, 0};
 	
 };
+
+USTRUCT(BlueprintType)
+struct FBlockInstanceData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FPrimitiveInstanceId InstanceId;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EBlockType BlockType = EBlockType::None;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bHighlighted = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DestructionAlpha = 0.0f;
+	
+};
