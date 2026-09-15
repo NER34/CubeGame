@@ -154,7 +154,7 @@ void UChunkLoader::ProcessLoadQueue()
 			continue;
 		}
 
-		ChunkGeneratorSubsystem->LoadChunk(this, ChunkActorClass, ChunkPos);
+		ChunkGeneratorSubsystem->LoadChunk(this, ChunkPos);
 		if (ChunkGeneratorSubsystem->GetChunkActor(ChunkPos))
 		{
 			LoadedChunks.Add(ChunkPos);
@@ -189,6 +189,6 @@ bool UChunkLoader::IsChunkPosInBounds(const FIntVector& ChunkPos, const FIntVect
 
 bool UChunkLoader::CanUseChunkGenerator() const
 {
-	return ChunkGeneratorSubsystem && ChunkActorClass && GetOwner();
+	return ChunkGeneratorSubsystem && GetOwner();
 }
 

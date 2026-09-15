@@ -30,8 +30,6 @@ public:
 		) override;
 
 private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chunks", meta=(AllowPrivateAccess="true"))
-	TSubclassOf<AChunkActor> ChunkActorClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chunks", meta=(AllowPrivateAccess="true", ClampMin="0"))
 	int32 LoadRadius = 0;

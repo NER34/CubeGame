@@ -10,7 +10,15 @@ public class MyProject3 : ModuleRules
 		
 		OptimizeCode = CodeOptimization.Never;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core", 
+			"CoreUObject", 
+			"Engine", 
+			"InputCore", 
+			"EnhancedInput",
+			"DeveloperSettings",
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

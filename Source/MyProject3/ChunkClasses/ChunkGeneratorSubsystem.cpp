@@ -4,12 +4,19 @@
 #include "ChunkGeneratorSubsystem.h"
 
 #include "ChunkActor.h"
+#include "ChunkGeneratorSettings.h"
 #include "ChunkHelperFunctions.h"
 
 
-void UChunkGeneratorSubsystem::SetChunkGeneratorSetup(const FChunkGeneratorSetup& InChunkSetup)
+void UChunkGeneratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	ChunkGeneratorSetup = InChunkSetup;
+	Super::Initialize(Collection);
+	
+	if (auto* Settings = UChunkGeneratorSettings::StaticClass()->GetDefaultObject<UChunkGeneratorSettings>())
+	{
+		ChunkGeneratorSetup = Settings->ChunkGeneratorSetup;
+		ChunkActorClass = Settings->ChunkActorClass;
+	}
 }
 
 const FChunkGeneratorSetup& UChunkGeneratorSubsystem::GetChunkGeneratorSetup() const
@@ -17,14 +24,17 @@ const FChunkGeneratorSetup& UChunkGeneratorSubsystem::GetChunkGeneratorSetup() c
 	return ChunkGeneratorSetup;
 }
 
-void UChunkGeneratorSubsystem::LoadChunk(UObject* WorldContext, TSubclassOf<AChunkActor> ChunkActorClass, FIntVector ChunkPos)
+void UChunkGeneratorSubsystem::LoadChunk(UObject* WorldContext, FIntVector ChunkPos)
 {
-	if (!ChunkActors.Contains(ChunkPos) && IsChunkPosInBounds(ChunkPos))
+	if (!ChunkActors.Contains(ChunkPos) && IsChunkPosInBounds(ChunkPos) && ChunkActorClass)
 	{
-		FVector ChunkRealPos = CalculateChunkRealPosition(ChunkPos);
-		AActor* SpawnedActor = GetWorld()->SpawnActor(ChunkActorClass, &ChunkRealPos);
-		check(SpawnedActor != nullptr);
-		auto* ChunkActor = ChunkActors.Add(ChunkPos, static_cast<AChunkActor*>(SpawnedActor));
+		AChunkActor* ChunkActor = AcquireChunkActor(WorldContext/*, ChunkActorClass, ChunkPos*/);
+		if (!ChunkActor)
+		{
+			return;
+		}
+
+		ChunkActors.Add(ChunkPos, ChunkActor);
 		ChunkActor->Initialize(ChunkGeneratorSetup.ChunkSetup, ChunkPos);
 	}
 }
@@ -34,8 +44,27 @@ void UChunkGeneratorSubsystem::UnloadChunk(FIntVector ChunkPos)
 	AChunkActor* ChunkActor;
 	if (ChunkActors.RemoveAndCopyValue(ChunkPos, ChunkActor))
 	{
-		ChunkActor->Destroy();
+		ChunkActor->Deinitialize();
+		InactiveChunkActors.Add(ChunkActor);
 	}
+}
+
+AChunkActor* UChunkGeneratorSubsystem::AcquireChunkActor(const UObject* WorldContext/*, FIntVector ChunkPos*/)
+{
+	if (!InactiveChunkActors.IsEmpty())
+	{
+		return InactiveChunkActors.Pop();
+	}
+
+	UWorld* World = WorldContext ? WorldContext->GetWorld() : GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	AChunkActor* ChunkActor = World->SpawnActor<AChunkActor>(ChunkActorClass);
+
+	return ChunkActor;
 }
 
 AChunkActor* UChunkGeneratorSubsystem::GetChunkActor(FIntVector ChunkPos)
@@ -59,4 +88,14 @@ bool UChunkGeneratorSubsystem::IsChunkPosInBounds(FIntVector ChunkPos) const
 	return UChunkHelperFunctions::IsChunkPosInBounds(
 		ChunkPos, ChunkGeneratorSetup.ChunkBoundsMin, ChunkGeneratorSetup.ChunkBoundsMax
 		);
+}
+
+int32 UChunkGeneratorSubsystem::GetNumActiveChunks() const
+{
+	return ChunkActors.Num();
+}
+
+int32 UChunkGeneratorSubsystem::GetNumInactiveChunks() const
+{
+	return InactiveChunkActors.Num();
 }

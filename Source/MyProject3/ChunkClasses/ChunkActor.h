@@ -19,53 +19,54 @@ public:
 	
 	AChunkActor();
 	
-	virtual void Tick(float DeltaTime) override;
-	
-	UFUNCTION(BlueprintNativeEvent)
-	void Initialize(const FChunkSetup& InChunkSetup, FIntVector InChunkPos);
-	virtual void Initialize_Implementation(const FChunkSetup& InChunkSetup, FIntVector InChunkPos);
+	virtual void Initialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos);
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnInitialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos);
+
+	virtual void Deinitialize();
+	UFUNCTION(BlueprintImplementableEvent, DisplayName="Deinitialize")
+	void OnDeinitialize();
 	
 	UFUNCTION(BlueprintPure)
 	const FChunkSetup& GetChunkSetup() const;
 	
 	UFUNCTION(BlueprintCallable)
-	void SetBlockType(EBlockType BlockType, FIntVector Pos);
+	void SetBlockType(EBlockType BlockType, const FIntVector& Pos);
 	
 	UFUNCTION(BlueprintPure)
-	EBlockType GetBlockType(FIntVector Pos) const;
+	EBlockType GetBlockType(const FIntVector& Pos) const;
 	
 	UFUNCTION(BlueprintPure)
-	bool IsBlockPosInChunkBounds(FIntVector BlockPos) const;
+	bool IsBlockPosInChunkBounds(const FIntVector& BlockPos) const;
 	
 	UFUNCTION(BlueprintCallable)
-	void SetBlockDestructionAlpha(FIntVector BlockPos, float Alpha);
+	void SetBlockDestructionAlpha(const FIntVector& BlockPos, float Alpha);
 	
 	UFUNCTION(BlueprintCallable)
-	void SetBlockHighlightFlag(FIntVector BlockPos, bool bHighlight);
+	void SetBlockHighlightFlag(const FIntVector& BlockPos, bool bHighlight);
 	
 protected:
 	
 	void CreateInstance(int32 BlockID);
+	void ActualizeInstanceData(const FBlockInstanceData& InstanceData) const;
 	
 	void GenerateInstances();
-	void GenerateChunkData();
-	void UpdateInstancesVisibility(FIntVector ModifiedBlock);
-	void UpdateNeighborInstancesVisibility(FIntVector ModifiedBlock, FIntVector Delta);
+	void GenerateChunkData(const FVector& ChunkLocation);
+	void ActualizeModifiedInstance(const FIntVector& ModifiedBlock);
+	void UpdateNeighborInstancesVisibility(const FIntVector& ModifiedBlock, const FIntVector& Delta);
 	EBlockType GetBlockTypeByHeight(float Height);
 	
 	UFUNCTION(BlueprintPure)
 	const TArray<EBlockType>& GetChunkData() const;
 	
 	UFUNCTION(BlueprintPure)
-	int32 GetBlockIDFromPos(FIntVector Pos) const;
+	int32 GetBlockIDFromPos(const FIntVector& Pos) const;
 
 	UFUNCTION(BlueprintPure)
 	FIntVector GetBlockPosFromID(int32 ID) const;
 	
 	UFUNCTION(BlueprintPure)
 	FVector GetBlockRealPos(const FIntVector& Pos) const;
-	
-	virtual void BeginPlay() override;
 	
 private:
 	

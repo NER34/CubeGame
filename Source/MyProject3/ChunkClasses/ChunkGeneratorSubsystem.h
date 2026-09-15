@@ -16,15 +16,14 @@ class MYPROJECT3_API UChunkGeneratorSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 	
 public:
-
-	UFUNCTION(BlueprintCallable)
-	void SetChunkGeneratorSetup(const FChunkGeneratorSetup& InChunkSetup);
 	
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	UFUNCTION(BlueprintPure)
 	const FChunkGeneratorSetup& GetChunkGeneratorSetup() const;
 	
 	UFUNCTION(BlueprintCallable, meta=(WorldContext="WorldContext"))
-	void LoadChunk(UObject* WorldContext, TSubclassOf<AChunkActor> ChunkActorClass, FIntVector ChunkPos);
+	void LoadChunk(UObject* WorldContext, FIntVector ChunkPos);
 	
 	UFUNCTION(BlueprintCallable)
 	void UnloadChunk(FIntVector ChunkPos);
@@ -40,11 +39,25 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	bool IsChunkPosInBounds(FIntVector ChunkPos) const;
+	
+	UFUNCTION(BlueprintPure)
+	int32 GetNumActiveChunks() const;
+	
+	UFUNCTION(BlueprintPure)
+	int32 GetNumInactiveChunks() const;
 
 private:
 	
 	UPROPERTY()
+	TSubclassOf<AChunkActor> ChunkActorClass;
+
+	AChunkActor* AcquireChunkActor(const UObject* WorldContext);
+	
+	UPROPERTY()
 	TMap<FIntVector, AChunkActor*> ChunkActors;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AChunkActor>> InactiveChunkActors;
 	
 	FChunkGeneratorSetup ChunkGeneratorSetup;
 	
