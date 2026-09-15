@@ -20,14 +20,15 @@ FIntVector UChunkHelperFunctions::GetChunkGridPosition(const FChunkSetup& ChunkS
 	return {
 		FMath::FloorToInt32(RealPos.X / (ChunkSetup.ChunkSize.X * ChunkSetup.BlockSize.X)),
 		FMath::FloorToInt32(RealPos.Y / (ChunkSetup.ChunkSize.Y * ChunkSetup.BlockSize.Y)),
-		FMath::FloorToInt32(RealPos.Z / (ChunkSetup.ChunkSize.Z * ChunkSetup.BlockSize.Z)),
+		// TODO: I've decided that I'm going to use 2D chunk grid. I either need to remember it, or modify the whole system.
+		// Maybe even switch FIntVector to FIntVector2D. Such interface change will be a mess, so I'l leave it for now
+		0,
+		//FMath::FloorToInt32(RealPos.Z / (ChunkSetup.ChunkSize.Z * ChunkSetup.BlockSize.Z)),
 	};
 }
 
-bool UChunkHelperFunctions::IsChunkPosInBounds(const FChunkGeneratorSetup& GeneratorSetup, FIntVector ChunkPos)
+bool UChunkHelperFunctions::IsChunkPosInBounds(FIntVector ChunkPos, FIntVector Min, FIntVector Max)
 {
-	const auto& Min = GeneratorSetup.ChunkBoundsMin;
-	const auto& Max = GeneratorSetup.ChunkBoundsMax;
 	return Min.X <= ChunkPos.X && ChunkPos.X <= Max.X
 		&& Min.Y <= ChunkPos.Y && ChunkPos.Y <= Max.Y
 		&& Min.Z <= ChunkPos.Z && ChunkPos.Z <= Max.Z;

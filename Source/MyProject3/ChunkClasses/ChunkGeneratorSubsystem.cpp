@@ -56,5 +56,7 @@ FIntVector UChunkGeneratorSubsystem::GetChunkGridPosition(FVector RealPos) const
 
 bool UChunkGeneratorSubsystem::IsChunkPosInBounds(FIntVector ChunkPos) const
 {
-	return UChunkHelperFunctions::IsChunkPosInBounds(ChunkGeneratorSetup, ChunkPos);
+	return UChunkHelperFunctions::IsChunkPosInBounds(
+		ChunkPos, ChunkGeneratorSetup.ChunkBoundsMin, ChunkGeneratorSetup.ChunkBoundsMax
+		);
 }

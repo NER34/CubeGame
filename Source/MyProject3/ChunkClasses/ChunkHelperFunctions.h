@@ -23,7 +23,7 @@ public:
 	static FIntVector GetChunkGridPosition(const FChunkSetup& ChunkSetup, FVector RealPos);
 	
 	UFUNCTION(BlueprintPure)
-	static bool IsChunkPosInBounds(const FChunkGeneratorSetup& GeneratorSetup, FIntVector ChunkPos);
+	static bool IsChunkPosInBounds(FIntVector ChunkPos, FIntVector Min, FIntVector Max);
 	
 	UFUNCTION(BlueprintPure)
 	static int32 GetBlockIDFromPos(const FChunkSetup& ChunkSetup, FIntVector Pos);
