@@ -28,11 +28,38 @@ void AChunkActor::BeginPlay()
 	}
 }
 
+void AChunkActor::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
+{
+	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
+	
+	if (!ChunkGeneratorSubsystem)
+	{
+		return;
+	}
+	
+	if (!bInstancesInitialized)
+	{
+		bool bNeighborsInitialized = true;
+		bNeighborsInitialized &= IsValid(ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector{1,0,0}));
+		bNeighborsInitialized &= IsValid(ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector{-1,0,0}));
+		bNeighborsInitialized &= IsValid(ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector{0,1,0}));
+		bNeighborsInitialized &= IsValid(ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector{0,-1,0}));
+		
+		if (bNeighborsInitialized)
+		{
+			bInstancesInitialized = true;
+			InitializeInstances();
+			SetActorHiddenInGame(false);
+		}
+	}
+}
+
 void AChunkActor::Initialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos)
 {
 	ChunkPos = InChunkPos;
 	ChunkSetup = InChunkSetup;
-
+	
+	bInstancesInitialized = false;
 	InstancedStaticMeshComponent->ClearInstances();
 	VisibleInstances.Reset();
 	ChunkData.Reset();
@@ -40,24 +67,18 @@ void AChunkActor::Initialize(const FChunkSetup& InChunkSetup, const FIntVector& 
 	
 	FVector ChunkLocation = UChunkHelperFunctions::CalculateChunkRealPosition(ChunkSetup, ChunkPos);
 	SetActorLocation(ChunkLocation);
-	SetActorHiddenInGame(false);
 	SetActorTickEnabled(true);
 	
-	GenerateChunkData();
-	GenerateInstances();
-	
-	OnInitialize(ChunkSetup, ChunkPos);
+	InitializeChunkData();
 }
 
 void AChunkActor::Deinitialize()
 {
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
-	
-	OnDeinitialize();
 }
 
-void AChunkActor::GenerateChunkData()
+void AChunkActor::InitializeChunkData()
 {	
 	ParallelFor(ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y, 
 		[this](int32 ID)
@@ -105,7 +126,7 @@ void AChunkActor::ActualizeInstanceData(const FBlockInstanceData& InstanceData) 
 		);
 }
 
-void AChunkActor::GenerateInstances()
+void AChunkActor::InitializeInstances()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AChunkActor::GenerateInstances"));
 	TArray<int32> VisibleBlockIds;
@@ -192,12 +213,47 @@ void AChunkActor::ActualizeModifiedInstance(const FIntVector& ModifiedBlock)
 	}		
 }
 
-void AChunkActor::UpdateNeighborInstancesVisibility(const FIntVector& ModifiedBlock, const FIntVector& Delta)
+void AChunkActor::UpdateNeighborInstancesVisibility(FIntVector NeighborBlockPos)
 {
-	FIntVector NeighborBlock = ModifiedBlock + Delta;
-	if (IsBlockPosInChunkBounds(NeighborBlock))
+	if (IsBlockPosInChunkBounds(NeighborBlockPos))
 	{
-		ActualizeModifiedInstance(NeighborBlock);
+		ActualizeModifiedInstance(NeighborBlockPos);
+	}
+	else
+	{
+		if (NeighborBlockPos.Z < 0 || NeighborBlockPos.Z >= ChunkSetup.ChunkSize.Z)
+		{
+			return;
+		}
+		
+		FIntVector NeighborChunkPos = ChunkPos;
+		
+		if (NeighborBlockPos.X < 0)
+		{
+			NeighborChunkPos.X -= 1;
+			NeighborBlockPos.X += ChunkSetup.ChunkSize.X;
+		}
+		else if (NeighborBlockPos.X >= ChunkSetup.ChunkSize.X)
+		{
+			NeighborChunkPos.X += 1;
+			NeighborBlockPos.X -= ChunkSetup.ChunkSize.X;
+		}
+		
+		if (NeighborBlockPos.Y < 0)
+		{
+			NeighborChunkPos.Y -= 1;
+			NeighborBlockPos.Y += ChunkSetup.ChunkSize.Y;
+		}
+		else if (NeighborBlockPos.Y >= ChunkSetup.ChunkSize.Y)
+		{
+			NeighborChunkPos.Y += 1;
+			NeighborBlockPos.Y -= ChunkSetup.ChunkSize.Y;
+		}	
+		
+		if (auto* NeighborChunkActor = ChunkGeneratorSubsystem->GetChunkActor(NeighborChunkPos))
+		{
+			NeighborChunkActor->ActualizeModifiedInstance(NeighborBlockPos);
+		}
 	}
 }
 
@@ -227,12 +283,12 @@ void AChunkActor::SetBlockType(EBlockType BlockType, const FIntVector& Pos)
 	
 	ActualizeModifiedInstance(Pos);
 	
-	UpdateNeighborInstancesVisibility(Pos, FIntVector(1, 0, 0));
-	UpdateNeighborInstancesVisibility(Pos, FIntVector(-1, 0, 0));
-	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 1, 0));
-	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, -1, 0));
-	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 0, 1));
-	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 0, -1));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(1, 0, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(-1, 0, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 1, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, -1, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 0, 1));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 0, -1));
 	
 }
 
@@ -260,7 +316,15 @@ bool AChunkActor::IsAirBlock(const FIntVector& BlockPos) const
 {
 	if (!IsBlockPosInChunkBounds(BlockPos))
 	{
-		return true;
+		if (BlockPos.Z < 0)
+		{
+			return false;
+		}
+		if (BlockPos.Z >= ChunkSetup.ChunkSize.Z)
+		{
+			return true;
+		}
+		return false;
 	}
 
 	return GetBlockType(BlockPos) == EBlockType::Air;
@@ -273,12 +337,57 @@ bool AChunkActor::IsBlockVisible(const FIntVector& BlockPos) const
 		return false;
 	}
 
-	return IsAirBlock(BlockPos + FIntVector(1, 0, 0))
-		|| IsAirBlock(BlockPos + FIntVector(-1, 0, 0))
-		|| IsAirBlock(BlockPos + FIntVector(0, 1, 0))
-		|| IsAirBlock(BlockPos + FIntVector(0, -1, 0))
-		|| IsAirBlock(BlockPos + FIntVector(0, 0, 1))
-		|| IsAirBlock(BlockPos + FIntVector(0, 0, -1));
+	bool bIsVisible = false;
+	
+	bIsVisible |= IsAirBlock(BlockPos + FIntVector(0, 0, -1));
+	bIsVisible |= IsAirBlock(BlockPos + FIntVector(0, 0, 1));
+	
+	// Check X+ neighbor
+	FIntVector NextBlockPos = BlockPos + FIntVector(1, 0, 0);
+	if (NextBlockPos.X >= ChunkSetup.ChunkSize.X)
+	{
+		if (auto* NextChunkActor = ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector(1, 0, 0)))
+		{
+			bIsVisible |= NextChunkActor->IsAirBlock({0, NextBlockPos.Y, NextBlockPos.Z});
+		}
+	}
+	else { bIsVisible |= IsAirBlock(NextBlockPos); }
+	
+	// Check X- neighbor
+	NextBlockPos = BlockPos + FIntVector(-1, 0, 0);
+	if (NextBlockPos.X < 0)
+	{
+		if (auto* NextChunkActor = ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector(-1, 0, 0)))
+		{
+			bIsVisible |= NextChunkActor->IsAirBlock({ChunkSetup.ChunkSize.X - 1, NextBlockPos.Y, NextBlockPos.Z});
+		}
+	}
+	else { bIsVisible |= IsAirBlock(NextBlockPos); }
+	
+	
+	// Check Y+ neighbor
+	NextBlockPos = BlockPos + FIntVector(0, 1, 0);
+	if (NextBlockPos.Y >= ChunkSetup.ChunkSize.Y)
+	{
+		if (auto* NextChunkActor = ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector(0, 1, 0)))
+		{
+			bIsVisible |= NextChunkActor->IsAirBlock({NextBlockPos.X, 0, NextBlockPos.Z});
+		}
+	}
+	else { bIsVisible |= IsAirBlock(NextBlockPos); }
+	
+	// Check Y- neighbor
+	NextBlockPos = BlockPos + FIntVector(0, -1, 0);
+	if (NextBlockPos.Y < 0)
+	{
+		if (auto* NextChunkActor = ChunkGeneratorSubsystem->GetChunkActor(ChunkPos + FIntVector(0, -1, 0)))
+		{
+			bIsVisible |= NextChunkActor->IsAirBlock({NextBlockPos.X, ChunkSetup.ChunkSize.Y - 1, NextBlockPos.Z});
+		}
+	}
+	else { bIsVisible |= IsAirBlock(NextBlockPos); }
+	
+	return bIsVisible;
 }
 
 void AChunkActor::SetBlockDestructionAlpha(const FIntVector& BlockPos, float Alpha)

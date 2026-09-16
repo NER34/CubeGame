@@ -21,14 +21,10 @@ public:
 	AChunkActor();
 	
 	virtual void BeginPlay() override;
+	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
 	
 	virtual void Initialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos);
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnInitialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos);
-
 	virtual void Deinitialize();
-	UFUNCTION(BlueprintImplementableEvent, DisplayName="Deinitialize")
-	void OnDeinitialize();
 	
 	UFUNCTION(BlueprintPure)
 	const FChunkSetup& GetChunkSetup() const;
@@ -76,10 +72,10 @@ protected:
 	void CreateInstance(int32 BlockID);
 	void ActualizeInstanceData(const FBlockInstanceData& InstanceData) const;
 	
-	void GenerateInstances();
-	void GenerateChunkData();
+	void InitializeInstances();
+	void InitializeChunkData();
 	void ActualizeModifiedInstance(const FIntVector& ModifiedBlock);
-	void UpdateNeighborInstancesVisibility(const FIntVector& ModifiedBlock, const FIntVector& Delta);
+	void UpdateNeighborInstancesVisibility(FIntVector NeighborBlockPos);
 	
 	UFUNCTION(BlueprintPure)
 	const TArray<EBlockType>& GetChunkData() const;
@@ -95,6 +91,8 @@ private:
 	TArray<EBlockType> ChunkData;
 	
 	FIntVector ChunkPos;
+	
+	bool bInstancesInitialized = false;
 	
 	UPROPERTY()
 	UChunkGeneratorSubsystem* ChunkGeneratorSubsystem = nullptr;
