@@ -38,6 +38,9 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	bool IsBlockPosInChunkBounds(const FIntVector& BlockPos) const;
+
+	bool IsAirBlock(const FIntVector& BlockPos) const;
+	bool IsBlockVisible(const FIntVector& BlockPos) const;
 	
 	UFUNCTION(BlueprintCallable)
 	void SetBlockDestructionAlpha(const FIntVector& BlockPos, float Alpha);

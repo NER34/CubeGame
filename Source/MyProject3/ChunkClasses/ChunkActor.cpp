@@ -42,7 +42,6 @@ void AChunkActor::Initialize(const FChunkSetup& InChunkSetup, const FIntVector& 
 	
 	SetActorLocation(ChunkLocation);
 	SetActorHiddenInGame(false);
-	//SetActorEnableCollision(true);
 	SetActorTickEnabled(true);
 	
 	OnInitialize(ChunkSetup, ChunkPos);
@@ -51,7 +50,6 @@ void AChunkActor::Initialize(const FChunkSetup& InChunkSetup, const FIntVector& 
 void AChunkActor::Deinitialize()
 {
 	SetActorHiddenInGame(true);
-	//SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
 	
 	OnDeinitialize();
@@ -85,7 +83,7 @@ void AChunkActor::GenerateInstances()
 {
 	for (int ID = 0; ID < ChunkData.Num(); ID++)
 	{
-		if (ChunkData[ID] != EBlockType::Air)
+		if (IsBlockVisible(GetBlockPosFromID(ID)))
 		{
 			CreateInstance(ID);
 			ActualizeInstanceData(VisibleInstances[ID]);
@@ -121,7 +119,7 @@ void AChunkActor::GenerateChunkData(const FVector& ChunkLocation)
 void AChunkActor::ActualizeModifiedInstance(const FIntVector& ModifiedBlock)
 {
 	auto BlockID = GetBlockIDFromPos(ModifiedBlock);
-	if (ChunkData[BlockID] == EBlockType::Air)
+	if (!IsBlockVisible(ModifiedBlock))
 	{
 		if (auto* InstanceData = VisibleInstances.Find(BlockID))
 		{
@@ -145,24 +143,11 @@ void AChunkActor::ActualizeModifiedInstance(const FIntVector& ModifiedBlock)
 
 void AChunkActor::UpdateNeighborInstancesVisibility(const FIntVector& ModifiedBlock, const FIntVector& Delta)
 {
-	// TODO
-	/*FIntVector NeighborBlock = ModifiedBlock + Delta;
+	FIntVector NeighborBlock = ModifiedBlock + Delta;
 	if (IsBlockPosInChunkBounds(NeighborBlock))
 	{
 		ActualizeModifiedInstance(NeighborBlock);
 	}
-	else
-	{
-		if (auto* ChunkGenerator = GetGameInstance()->GetSubsystem<UChunkGeneratorSubsystem>())
-			if (AChunkActor* NeighborChunk = ChunkGenerator->GetChunkActor(ChunkPos + Delta))
-			{
-				NeighborBlock += ChunkSetup.ChunkSize;
-				NeighborBlock.X %= ChunkSetup.ChunkSize.X;
-				NeighborBlock.Y %= ChunkSetup.ChunkSize.Y;
-				NeighborBlock.Z %= ChunkSetup.ChunkSize.Z;
-				NeighborChunk->ActualizeModifiedInstance(NeighborBlock);
-			}		
-	}*/
 }
 
 EBlockType AChunkActor::GetBlockTypeByHeight(float Height)
@@ -199,12 +184,12 @@ void AChunkActor::SetBlockType(EBlockType BlockType, const FIntVector& Pos)
 	
 	ActualizeModifiedInstance(Pos);
 	
-	//UpdateNeighborInstancesVisibility(Pos, FIntVector(1, 0, 0));
-	//UpdateNeighborInstancesVisibility(Pos, FIntVector(-1, 0, 0));
-	//UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 1, 0));
-	//UpdateNeighborInstancesVisibility(Pos, FIntVector(0, -1, 0));
-	//UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 0, 1));
-	//UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 0, -1));
+	UpdateNeighborInstancesVisibility(Pos, FIntVector(1, 0, 0));
+	UpdateNeighborInstancesVisibility(Pos, FIntVector(-1, 0, 0));
+	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 1, 0));
+	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, -1, 0));
+	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 0, 1));
+	UpdateNeighborInstancesVisibility(Pos, FIntVector(0, 0, -1));
 	
 }
 
@@ -224,6 +209,31 @@ bool AChunkActor::IsBlockPosInChunkBounds(const FIntVector& BlockPos) const
 	return 0 <= BlockPos.X && BlockPos.X < ChunkSetup.ChunkSize.X
 		&& 0 <= BlockPos.Y && BlockPos.Y < ChunkSetup.ChunkSize.Y
 		&& 0 <= BlockPos.Z && BlockPos.Z < ChunkSetup.ChunkSize.Z;
+}
+
+bool AChunkActor::IsAirBlock(const FIntVector& BlockPos) const
+{
+	if (!IsBlockPosInChunkBounds(BlockPos))
+	{
+		return true;
+	}
+
+	return GetBlockType(BlockPos) == EBlockType::Air;
+}
+
+bool AChunkActor::IsBlockVisible(const FIntVector& BlockPos) const
+{
+	if (GetBlockType(BlockPos) == EBlockType::Air)
+	{
+		return false;
+	}
+
+	return IsAirBlock(BlockPos + FIntVector(1, 0, 0))
+		|| IsAirBlock(BlockPos + FIntVector(-1, 0, 0))
+		|| IsAirBlock(BlockPos + FIntVector(0, 1, 0))
+		|| IsAirBlock(BlockPos + FIntVector(0, -1, 0))
+		|| IsAirBlock(BlockPos + FIntVector(0, 0, 1))
+		|| IsAirBlock(BlockPos + FIntVector(0, 0, -1));
 }
 
 void AChunkActor::SetBlockDestructionAlpha(const FIntVector& BlockPos, float Alpha)
