@@ -16,12 +16,12 @@ void UChunkGeneratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		ChunkGeneratorSetup = Settings->ChunkGeneratorSetup;
 		ChunkActorClass = Settings->ChunkActorClass;
-		
+				
 		int32 Seed	= ChunkGeneratorSetup.bGenerateRandomSeed 
-					? FMath::RandRange(INT32_MIN, INT32_MAX) 
+					? FMath::Rand()
 					: ChunkGeneratorSetup.Seed;
 		
-		NoiseGenerator.SetSeed(ChunkGeneratorSetup.Seed);
+		NoiseGenerator.SetSeed(Seed);
 		NoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 		NoiseGenerator.SetFrequency(0.01f);
 		NoiseGenerator.SetFractalType(FastNoiseLite::FractalType_FBm);
@@ -30,11 +30,6 @@ void UChunkGeneratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		NoiseGenerator.SetFractalGain(0.46f);
 		NoiseGenerator.SetFractalWeightedStrength(0.38f);
 	}
-}
-
-const FChunkGeneratorSetup& UChunkGeneratorSubsystem::GetChunkGeneratorSetup() const
-{
-	return ChunkGeneratorSetup;
 }
 
 void UChunkGeneratorSubsystem::LoadChunk(UObject* WorldContext, FIntVector ChunkPos)
@@ -86,6 +81,11 @@ AChunkActor* UChunkGeneratorSubsystem::GetChunkActor(FIntVector ChunkPos)
 	return ChunkActor ? *ChunkActor : nullptr;
 }
 
+const FChunkGeneratorSetup& UChunkGeneratorSubsystem::GetChunkGeneratorSetup() const
+{
+	return ChunkGeneratorSetup;
+}
+
 FVector UChunkGeneratorSubsystem::CalculateChunkRealPosition(FIntVector ChunkPos) const
 {
 	return UChunkHelperFunctions::CalculateChunkRealPosition(ChunkGeneratorSetup.ChunkSetup, ChunkPos);
@@ -99,18 +99,10 @@ FIntVector UChunkGeneratorSubsystem::GetChunkGridPosition(FVector RealPos) const
 bool UChunkGeneratorSubsystem::IsChunkPosInBounds(FIntVector ChunkPos) const
 {
 	return UChunkHelperFunctions::IsPosInBounds(
-		ChunkPos, ChunkGeneratorSetup.ChunkBoundsMin, ChunkGeneratorSetup.ChunkBoundsMax
+		ChunkPos, 
+		{INT32_MIN, INT32_MIN, 0}, 
+		{INT32_MAX, INT32_MAX, 1}
 	);
-}
-
-int32 UChunkGeneratorSubsystem::GetNumActiveChunks() const
-{
-	return ChunkActors.Num();
-}
-
-int32 UChunkGeneratorSubsystem::GetNumInactiveChunks() const
-{
-	return InactiveChunkActors.Num();
 }
 
 EBlockType UChunkGeneratorSubsystem::GenerateBlockType(FIntVector ChunkPos, FIntVector BlockPos) const

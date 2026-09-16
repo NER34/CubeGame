@@ -19,9 +19,6 @@ class MYPROJECT3_API UChunkGeneratorSubsystem : public UGameInstanceSubsystem
 public:
 	
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
-	UFUNCTION(BlueprintPure)
-	const FChunkGeneratorSetup& GetChunkGeneratorSetup() const;
 	
 	UFUNCTION(BlueprintCallable, meta=(WorldContext="WorldContext"))
 	void LoadChunk(UObject* WorldContext, FIntVector ChunkPos);
@@ -32,6 +29,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	AChunkActor* GetChunkActor(FIntVector ChunkPos);
 	
+private:
+
+	AChunkActor* AcquireChunkActor(const UObject* WorldContext);
+	
+public:
+
+	UFUNCTION(BlueprintPure)
+	const FChunkGeneratorSetup& GetChunkGeneratorSetup() const;
+	
 	UFUNCTION(BlueprintPure)
 	FVector CalculateChunkRealPosition(FIntVector ChunkPos) const;
 	
@@ -41,26 +47,18 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool IsChunkPosInBounds(FIntVector ChunkPos) const;
 	
-	UFUNCTION(BlueprintPure)
-	int32 GetNumActiveChunks() const;
-	
-	UFUNCTION(BlueprintPure)
-	int32 GetNumInactiveChunks() const;
-	
 	EBlockType GenerateBlockType(FIntVector ChunkPos, FIntVector BlockPos) const;
 
 private:
 	
 	UPROPERTY()
 	TSubclassOf<AChunkActor> ChunkActorClass;
-
-	AChunkActor* AcquireChunkActor(const UObject* WorldContext);
 	
 	UPROPERTY()
 	TMap<FIntVector, AChunkActor*> ChunkActors;
 
 	UPROPERTY()
-	TArray<TObjectPtr<AChunkActor>> InactiveChunkActors;
+	TArray<AChunkActor*> InactiveChunkActors;
 	
 	FChunkGeneratorSetup ChunkGeneratorSetup;
 	

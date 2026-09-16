@@ -26,8 +26,21 @@ public:
 	virtual void Initialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos);
 	virtual void Deinitialize();
 	
-	UFUNCTION(BlueprintPure)
-	const FChunkSetup& GetChunkSetup() const;
+private:
+	
+	void InitializeChunkData();
+	void InitializeInstances();
+	
+	void CreateInstance(int32 BlockID);
+	void ActualizeInstanceData(const FBlockInstanceData& InstanceData) const;
+	
+	void ActualizeModifiedInstance(const FIntVector& ModifiedBlock);
+	void UpdateNeighborInstancesVisibility(FIntVector NeighborBlockPos);
+
+	bool IsAirBlock(const FIntVector& BlockPos) const;
+	bool IsBlockVisible(const FIntVector& BlockPos) const;
+	
+public:
 	
 	UFUNCTION(BlueprintCallable)
 	void SetBlockType(EBlockType BlockType, const FIntVector& Pos);
@@ -37,18 +50,13 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	bool IsBlockPosInChunkBounds(const FIntVector& BlockPos) const;
-
-	UFUNCTION(BlueprintPure)
-	bool IsAirBlock(const FIntVector& BlockPos) const;
-
-	UFUNCTION(BlueprintPure)
-	bool IsBlockVisible(const FIntVector& BlockPos) const;
 	
 	UFUNCTION(BlueprintCallable)
 	void SetBlockDestructionAlpha(const FIntVector& BlockPos, float Alpha);
 	
 	UFUNCTION(BlueprintCallable)
 	void SetBlockHighlightFlag(const FIntVector& BlockPos, bool bHighlight);
+	
 	
 	
 	UFUNCTION(BlueprintPure)
@@ -62,36 +70,19 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	FIntVector GetBlockGridPos(const FVector& Pos) const;
-	
-	/*
-	void SetISMCollisionEnabled(bool bEnable);
-	*/
 
 protected:
 	
-	void CreateInstance(int32 BlockID);
-	void ActualizeInstanceData(const FBlockInstanceData& InstanceData) const;
-	
-	void InitializeInstances();
-	void InitializeChunkData();
-	void ActualizeModifiedInstance(const FIntVector& ModifiedBlock);
-	void UpdateNeighborInstancesVisibility(FIntVector NeighborBlockPos);
-	
-	UFUNCTION(BlueprintPure)
-	const TArray<EBlockType>& GetChunkData() const;
 private:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInstancedStaticMeshComponent> InstancedStaticMeshComponent;
 	
-	TMap<int32, FBlockInstanceData> VisibleInstances;
-
 	FChunkSetup ChunkSetup;
-	
-	TArray<EBlockType> ChunkData;
-	
 	FIntVector ChunkPos;
-	
+
+	TMap<int32, FBlockInstanceData> VisibleInstances;
+	TArray<EBlockType> ChunkData;
 	bool bInstancesInitialized = false;
 	
 	UPROPERTY()

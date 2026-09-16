@@ -40,8 +40,6 @@ public:
 	UFUNCTION(BlueprintPure)
 	static FVector GetBlockScale(const FChunkSetup& ChunkSetup);
 	
-	// This one is not ready yet, I need to think how to detect the right block, no metter
-	// from which side i'm pointing to it
 	UFUNCTION(BlueprintPure)
 	static FIntVector GetBlockGridPos(const FChunkSetup& ChunkSetup, const FIntVector& ChunkPos, const FVector& RealPos);
 	

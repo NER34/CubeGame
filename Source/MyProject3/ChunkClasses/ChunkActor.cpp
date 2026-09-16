@@ -96,36 +96,6 @@ void AChunkActor::InitializeChunkData()
 	);
 }
 
-void AChunkActor::CreateInstance(int32 BlockID)
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AChunkActor::CreateInstance"));
-	FVector BlockPosition_Double = UChunkHelperFunctions::ToVector(GetBlockPosFromID(BlockID));
-	FVector BlockRelativeLocation = BlockPosition_Double * ChunkSetup.BlockSize;
-			
-	FTransform InstanceTransform;
-	InstanceTransform.SetLocation(BlockRelativeLocation);
-	InstanceTransform.SetScale3D(UChunkHelperFunctions::GetBlockScale(ChunkSetup));
-
-	FBlockInstanceData InstanceData;
-	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AddInstanceById"));
-		InstanceData.InstanceId = InstancedStaticMeshComponent->AddInstancesById(
-			{InstanceTransform}, false, false
-			)[0];
-	}
-	InstanceData.BlockType = ChunkData[BlockID];
-	
-	VisibleInstances.Add(BlockID, InstanceData);
-}
-
-void AChunkActor::ActualizeInstanceData(const FBlockInstanceData& InstanceData) const
-{	
-	float EncodedInstanceData = UChunkHelperFunctions::EncodeBlockInstanceData(InstanceData);
-	InstancedStaticMeshComponent->SetCustomDataValueById(
-		InstanceData.InstanceId, 0, EncodedInstanceData
-		);
-}
-
 void AChunkActor::InitializeInstances()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AChunkActor::GenerateInstances"));
@@ -187,6 +157,35 @@ void AChunkActor::InitializeInstances()
 	}
 }
 
+void AChunkActor::CreateInstance(int32 BlockID)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AChunkActor::CreateInstance"));
+	FVector BlockPosition_Double = UChunkHelperFunctions::ToVector(GetBlockPosFromID(BlockID));
+	FVector BlockRelativeLocation = BlockPosition_Double * ChunkSetup.BlockSize;
+			
+	FTransform InstanceTransform;
+	InstanceTransform.SetLocation(BlockRelativeLocation);
+	InstanceTransform.SetScale3D(UChunkHelperFunctions::GetBlockScale(ChunkSetup));
+
+	FBlockInstanceData InstanceData;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AddInstanceById"));
+		InstanceData.InstanceId = InstancedStaticMeshComponent->AddInstancesById(
+			{InstanceTransform}, false, false
+			)[0];
+	}
+	InstanceData.BlockType = ChunkData[BlockID];
+	
+	VisibleInstances.Add(BlockID, InstanceData);
+}
+
+void AChunkActor::ActualizeInstanceData(const FBlockInstanceData& InstanceData) const
+{	
+	float EncodedInstanceData = UChunkHelperFunctions::EncodeBlockInstanceData(InstanceData);
+	InstancedStaticMeshComponent->SetCustomDataValueById(
+		InstanceData.InstanceId, 0, EncodedInstanceData
+		);
+}
 
 void AChunkActor::ActualizeModifiedInstance(const FIntVector& ModifiedBlock)
 {
@@ -257,79 +256,6 @@ void AChunkActor::UpdateNeighborInstancesVisibility(FIntVector NeighborBlockPos)
 	}
 }
 
-const TArray<EBlockType>& AChunkActor::GetChunkData() const
-{
-	return ChunkData;
-}
-
-const FChunkSetup& AChunkActor::GetChunkSetup() const
-{
-	return ChunkSetup;
-}
-
-void AChunkActor::SetBlockType(EBlockType BlockType, const FIntVector& Pos)
-{
-	if (!IsBlockPosInChunkBounds(Pos))
-	{
-		return;
-	}
-	
-	int32 ID = GetBlockIDFromPos(Pos);
-	if (ChunkData[ID] == BlockType)
-	{
-		return;
-	}
-	ChunkData[ID] = BlockType;
-	
-	ActualizeModifiedInstance(Pos);
-	
-	UpdateNeighborInstancesVisibility(Pos + FIntVector(1, 0, 0));
-	UpdateNeighborInstancesVisibility(Pos + FIntVector(-1, 0, 0));
-	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 1, 0));
-	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, -1, 0));
-	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 0, 1));
-	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 0, -1));
-	
-}
-
-EBlockType AChunkActor::GetBlockType(const FIntVector& Pos) const
-{
-	if (!IsBlockPosInChunkBounds(Pos))
-	{
-		return EBlockType::Air;
-	}
-	
-	int32 ID = GetBlockIDFromPos(Pos);
-	return ChunkData[ID];
-}
-
-bool AChunkActor::IsBlockPosInChunkBounds(const FIntVector& BlockPos) const
-{
-	return UChunkHelperFunctions::IsPosInBounds(
-		BlockPos, 
-		{0,0,0}, 
-		ChunkSetup.ChunkSize
-		);
-}
-
-bool AChunkActor::IsAirBlock(const FIntVector& BlockPos) const
-{
-	if (!IsBlockPosInChunkBounds(BlockPos))
-	{
-		if (BlockPos.Z < 0)
-		{
-			return false;
-		}
-		if (BlockPos.Z >= ChunkSetup.ChunkSize.Z)
-		{
-			return true;
-		}
-		return false;
-	}
-
-	return GetBlockType(BlockPos) == EBlockType::Air;
-}
-
 bool AChunkActor::IsBlockVisible(const FIntVector& BlockPos) const
 {
 	if (GetBlockType(BlockPos) == EBlockType::Air)
@@ -390,6 +316,70 @@ bool AChunkActor::IsBlockVisible(const FIntVector& BlockPos) const
 	return bIsVisible;
 }
 
+bool AChunkActor::IsAirBlock(const FIntVector& BlockPos) const
+{
+	if (!IsBlockPosInChunkBounds(BlockPos))
+	{
+		if (BlockPos.Z < 0)
+		{
+			return false;
+		}
+		if (BlockPos.Z >= ChunkSetup.ChunkSize.Z)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	return GetBlockType(BlockPos) == EBlockType::Air;
+}
+
+
+void AChunkActor::SetBlockType(EBlockType BlockType, const FIntVector& Pos)
+{
+	if (!IsBlockPosInChunkBounds(Pos))
+	{
+		return;
+	}
+	
+	int32 ID = GetBlockIDFromPos(Pos);
+	if (ChunkData[ID] == BlockType)
+	{
+		return;
+	}
+	ChunkData[ID] = BlockType;
+	
+	ActualizeModifiedInstance(Pos);
+	
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(1, 0, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(-1, 0, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 1, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, -1, 0));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 0, 1));
+	UpdateNeighborInstancesVisibility(Pos + FIntVector(0, 0, -1));
+	
+}
+
+EBlockType AChunkActor::GetBlockType(const FIntVector& Pos) const
+{
+	if (!IsBlockPosInChunkBounds(Pos))
+	{
+		return EBlockType::Air;
+	}
+	
+	int32 ID = GetBlockIDFromPos(Pos);
+	return ChunkData[ID];
+}
+
+bool AChunkActor::IsBlockPosInChunkBounds(const FIntVector& BlockPos) const
+{
+	return UChunkHelperFunctions::IsPosInBounds(
+		BlockPos, 
+		{0,0,0}, 
+		ChunkSetup.ChunkSize
+		);
+}
+
 void AChunkActor::SetBlockDestructionAlpha(const FIntVector& BlockPos, float Alpha)
 {
 	if (!IsBlockPosInChunkBounds(BlockPos))
@@ -439,13 +429,4 @@ FIntVector AChunkActor::GetBlockGridPos(const FVector& Pos) const
 {
 	return UChunkHelperFunctions::GetBlockGridPos(ChunkSetup, ChunkPos, Pos);
 }
-
-/*
-void AChunkActor::SetISMCollisionEnabled(bool bEnable)
-{
-	InstancedStaticMeshComponent->SetCollisionEnabled(
-		bEnable ? ECollisionEnabled::Type::QueryAndPhysics : ECollisionEnabled::Type::NoCollision
-		);
-}
-*/
 

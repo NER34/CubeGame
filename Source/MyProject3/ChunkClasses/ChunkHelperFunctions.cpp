@@ -23,7 +23,6 @@ FIntVector UChunkHelperFunctions::GetChunkGridPosition(const FChunkSetup& ChunkS
 		// TODO: I've decided that I'm going to use 2D chunk grid. I either need to remember it, or modify the whole system.
 		// Maybe even switch FIntVector to FIntVector2D. Such interface change will be a mess, so I'l leave it for now
 		0,
-		//FMath::FloorToInt32(RealPos.Z / (ChunkSetup.ChunkSize.Z * ChunkSetup.BlockSize.Z)),
 	};
 }
 

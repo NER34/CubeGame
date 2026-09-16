@@ -16,18 +16,27 @@ class MYPROJECT3_API UChunkLoader : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this component's properties
+
 	UChunkLoader();
 
-protected:
-
 	virtual void BeginPlay() override;
-
-public:
 
 	virtual void TickComponent(
 		float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction
 		) override;
+	
+private:
+
+	void UpdatePlayerChunk(bool bForceUpdate = false);
+	void RebuildChunkRequests(const FIntVector& CenterChunk);
+	
+	void BuildChunkSetInRadius(const FIntVector& CenterChunk, int32 Radius, TSet<FIntVector>& OutChunks) const;
+	bool IsChunkPosInBounds(const FIntVector& ChunkPos, const FIntVector& CenterChunk, int32 Radius) const;
+	bool CanUseChunkGenerator() const;
+
+	void ProcessChunkQueues();
+	void ProcessUnloadQueue();
+	void ProcessLoadQueue();
 
 private:
 
@@ -41,29 +50,17 @@ private:
 	int32 MaxLoadsPerTick = 2;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chunks", meta=(AllowPrivateAccess="true", ClampMin="1"))
-	int32 MaxCollisionLoadsPerTick = 1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chunks", meta=(AllowPrivateAccess="true", ClampMin="1"))
 	int32 MaxUnloadsPerTick = 4;
 
+private:
+	
 	UPROPERTY()
 	UChunkGeneratorSubsystem* ChunkGeneratorSubsystem = nullptr;
 
 	TSet<FIntVector> LoadedChunks;
 
 	TQueue<FIntVector> LoadQueue;
-	//TQueue<FIntVector> LoadCollisionQueue;
 	TQueue<FIntVector> UnloadQueue;
 
 	FIntVector CurrentPlayerChunk = FIntVector::ZeroValue;
-
-	void UpdatePlayerChunk(bool bForceUpdate = false);
-	void RebuildChunkRequests(const FIntVector& CenterChunk);
-	void ProcessChunkQueues();
-	void ProcessUnloadQueue();
-	void ProcessLoadQueue();
-	//void ProcessLoadCollisionQueue();
-	void BuildChunkSetInRadius(const FIntVector& CenterChunk, int32 Radius, TSet<FIntVector>& OutChunks) const;
-	bool IsChunkPosInBounds(const FIntVector& ChunkPos, const FIntVector& CenterChunk, int32 Radius) const;
-	bool CanUseChunkGenerator() const;
 };

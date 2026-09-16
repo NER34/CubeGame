@@ -55,7 +55,6 @@ void UChunkLoader::RebuildChunkRequests(const FIntVector& CenterChunk)
 {
 	LoadQueue.Empty();
 	UnloadQueue.Empty();
-	//LoadCollisionQueue.Empty();
 
 	TSet<FIntVector> WantedLoadChunks;
 	TSet<FIntVector> AllowedLoadedChunks;
@@ -81,7 +80,6 @@ void UChunkLoader::RebuildChunkRequests(const FIntVector& CenterChunk)
 	for (const FIntVector& ChunkPos : ChunksToLoad)
 	{
 		LoadQueue.Enqueue(ChunkPos);
-		//LoadCollisionQueue.Enqueue(ChunkPos);
 	}
 
 	for (const FIntVector& ChunkPos : LoadedChunks)
@@ -102,7 +100,6 @@ void UChunkLoader::ProcessChunkQueues()
 
 	ProcessUnloadQueue();
 	ProcessLoadQueue();
-	//ProcessLoadCollisionQueue();
 }
 
 void UChunkLoader::ProcessUnloadQueue()
@@ -146,30 +143,6 @@ void UChunkLoader::ProcessLoadQueue()
 		}
 	}
 }
-
-/*
-void UChunkLoader::ProcessLoadCollisionQueue()
-{
-	for (int32 LoadsThisTick = 0; LoadsThisTick < MaxCollisionLoadsPerTick && !LoadQueue.IsEmpty(); ++LoadsThisTick)
-	{
-		FIntVector ChunkPos;
-		LoadCollisionQueue.Dequeue(ChunkPos);
-
-		if (!LoadedChunks.Contains(ChunkPos) || !IsChunkPosInBounds(ChunkPos, CurrentPlayerChunk, LoadRadius))
-		{
-			continue;
-		}
-
-		if (!ChunkGeneratorSubsystem->IsChunkPosInBounds(ChunkPos))
-		{
-			continue;
-		}
-
-		auto* ChunkActor = ChunkGeneratorSubsystem->GetChunkActor(ChunkPos);
-		ChunkActor->SetISMCollisionEnabled(true);
-	}
-}
-*/
 
 void UChunkLoader::BuildChunkSetInRadius(const FIntVector& CenterChunk, int32 Radius, TSet<FIntVector>& OutChunks) const
 {

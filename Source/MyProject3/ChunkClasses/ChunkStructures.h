@@ -42,13 +42,7 @@ struct FChunkGeneratorSetup
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FChunkSetup ChunkSetup;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntVector ChunkBoundsMin = {INT32_MIN, INT32_MIN, 0};
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntVector ChunkBoundsMax = {INT32_MAX, INT32_MAX, 1};
-	
+		
 };
 
 USTRUCT(BlueprintType)
