@@ -39,6 +39,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chunks", meta=(AllowPrivateAccess="true", ClampMin="1"))
 	int32 MaxLoadsPerTick = 2;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chunks", meta=(AllowPrivateAccess="true", ClampMin="1"))
+	int32 MaxCollisionLoadsPerTick = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chunks", meta=(AllowPrivateAccess="true", ClampMin="1"))
 	int32 MaxUnloadsPerTick = 4;
@@ -47,20 +50,19 @@ private:
 	UChunkGeneratorSubsystem* ChunkGeneratorSubsystem = nullptr;
 
 	TSet<FIntVector> LoadedChunks;
-	/*TSet<FIntVector> QueuedLoadChunks;*/
-	/*TSet<FIntVector> QueuedUnloadChunks;*/
 
 	TQueue<FIntVector> LoadQueue;
+	//TQueue<FIntVector> LoadCollisionQueue;
 	TQueue<FIntVector> UnloadQueue;
 
 	FIntVector CurrentPlayerChunk = FIntVector::ZeroValue;
-	/*bool bHasCurrentPlayerChunk = false;*/
 
 	void UpdatePlayerChunk(bool bForceUpdate = false);
 	void RebuildChunkRequests(const FIntVector& CenterChunk);
 	void ProcessChunkQueues();
 	void ProcessUnloadQueue();
 	void ProcessLoadQueue();
+	//void ProcessLoadCollisionQueue();
 	void BuildChunkSetInRadius(const FIntVector& CenterChunk, int32 Radius, TSet<FIntVector>& OutChunks) const;
 	bool IsChunkPosInBounds(const FIntVector& ChunkPos, const FIntVector& CenterChunk, int32 Radius) const;
 	bool CanUseChunkGenerator() const;

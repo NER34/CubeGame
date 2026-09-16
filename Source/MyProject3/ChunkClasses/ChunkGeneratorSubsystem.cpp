@@ -16,6 +16,19 @@ void UChunkGeneratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		ChunkGeneratorSetup = Settings->ChunkGeneratorSetup;
 		ChunkActorClass = Settings->ChunkActorClass;
+		
+		int32 Seed	= ChunkGeneratorSetup.bGenerateRandomSeed 
+					? FMath::RandRange(INT32_MIN, INT32_MAX) 
+					: ChunkGeneratorSetup.Seed;
+		
+		NoiseGenerator.SetSeed(ChunkGeneratorSetup.Seed);
+		NoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+		NoiseGenerator.SetFrequency(0.01f);
+		NoiseGenerator.SetFractalType(FastNoiseLite::FractalType_FBm);
+		NoiseGenerator.SetFractalOctaves(6);
+		NoiseGenerator.SetFractalLacunarity(1.94f);
+		NoiseGenerator.SetFractalGain(0.46f);
+		NoiseGenerator.SetFractalWeightedStrength(0.38f);
 	}
 }
 
@@ -85,9 +98,9 @@ FIntVector UChunkGeneratorSubsystem::GetChunkGridPosition(FVector RealPos) const
 
 bool UChunkGeneratorSubsystem::IsChunkPosInBounds(FIntVector ChunkPos) const
 {
-	return UChunkHelperFunctions::IsChunkPosInBounds(
+	return UChunkHelperFunctions::IsPosInBounds(
 		ChunkPos, ChunkGeneratorSetup.ChunkBoundsMin, ChunkGeneratorSetup.ChunkBoundsMax
-		);
+	);
 }
 
 int32 UChunkGeneratorSubsystem::GetNumActiveChunks() const
@@ -98,4 +111,26 @@ int32 UChunkGeneratorSubsystem::GetNumActiveChunks() const
 int32 UChunkGeneratorSubsystem::GetNumInactiveChunks() const
 {
 	return InactiveChunkActors.Num();
+}
+
+EBlockType UChunkGeneratorSubsystem::GenerateBlockType(FIntVector ChunkPos, FIntVector BlockPos) const
+{
+	if (BlockPos.Z == 0) { return EBlockType::Bedrock; }
+	
+	FVector BlockLocation = UChunkHelperFunctions::GetBlockRealPos(
+		ChunkGeneratorSetup.ChunkSetup, ChunkPos, BlockPos
+		);
+	
+	BlockLocation /= 10;
+	
+	float Height = NoiseGenerator.GetNoise(BlockLocation.X, BlockLocation.Y);
+	// (-1.0, 1.0) -> (0.0, 1.0)
+	Height = (Height + 1.0f) / 2.0f;
+	
+	float Height_Z = (float)BlockPos.Z / ChunkGeneratorSetup.ChunkSetup.ChunkSize.Z;
+	
+	if (Height_Z > Height)	{ return EBlockType::Air; }
+	if (Height_Z > 0.5f)	{ return EBlockType::Snow; }
+	if (Height_Z > 0.25f)	{ return EBlockType::Grass; }
+	return EBlockType::Stone;
 }

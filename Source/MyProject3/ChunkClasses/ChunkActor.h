@@ -8,6 +8,7 @@
 #include "MyProject3/ThirdParty/FastNoiseLite.h"
 #include "ChunkActor.generated.h"
 
+class UChunkGeneratorSubsystem;
 class UInstancedStaticMeshComponent;
 
 UCLASS()
@@ -18,6 +19,8 @@ class MYPROJECT3_API AChunkActor : public AActor
 public:
 	
 	AChunkActor();
+	
+	virtual void BeginPlay() override;
 	
 	virtual void Initialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos);
 	UFUNCTION(BlueprintImplementableEvent)
@@ -39,7 +42,10 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool IsBlockPosInChunkBounds(const FIntVector& BlockPos) const;
 
+	UFUNCTION(BlueprintPure)
 	bool IsAirBlock(const FIntVector& BlockPos) const;
+
+	UFUNCTION(BlueprintPure)
 	bool IsBlockVisible(const FIntVector& BlockPos) const;
 	
 	UFUNCTION(BlueprintCallable)
@@ -48,19 +54,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetBlockHighlightFlag(const FIntVector& BlockPos, bool bHighlight);
 	
-protected:
-	
-	void CreateInstance(int32 BlockID);
-	void ActualizeInstanceData(const FBlockInstanceData& InstanceData) const;
-	
-	void GenerateInstances();
-	void GenerateChunkData(const FVector& ChunkLocation);
-	void ActualizeModifiedInstance(const FIntVector& ModifiedBlock);
-	void UpdateNeighborInstancesVisibility(const FIntVector& ModifiedBlock, const FIntVector& Delta);
-	EBlockType GetBlockTypeByHeight(float Height);
-	
-	UFUNCTION(BlueprintPure)
-	const TArray<EBlockType>& GetChunkData() const;
 	
 	UFUNCTION(BlueprintPure)
 	int32 GetBlockIDFromPos(const FIntVector& Pos) const;
@@ -71,6 +64,25 @@ protected:
 	UFUNCTION(BlueprintPure)
 	FVector GetBlockRealPos(const FIntVector& Pos) const;
 	
+	UFUNCTION(BlueprintPure)
+	FIntVector GetBlockGridPos(const FVector& Pos) const;
+	
+	/*
+	void SetISMCollisionEnabled(bool bEnable);
+	*/
+
+protected:
+	
+	void CreateInstance(int32 BlockID);
+	void ActualizeInstanceData(const FBlockInstanceData& InstanceData) const;
+	
+	void GenerateInstances();
+	void GenerateChunkData();
+	void ActualizeModifiedInstance(const FIntVector& ModifiedBlock);
+	void UpdateNeighborInstancesVisibility(const FIntVector& ModifiedBlock, const FIntVector& Delta);
+	
+	UFUNCTION(BlueprintPure)
+	const TArray<EBlockType>& GetChunkData() const;
 private:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -80,10 +92,11 @@ private:
 
 	FChunkSetup ChunkSetup;
 	
-	FastNoiseLite NoiseGenerator;
-	
 	TArray<EBlockType> ChunkData;
 	
 	FIntVector ChunkPos;
+	
+	UPROPERTY()
+	UChunkGeneratorSubsystem* ChunkGeneratorSubsystem = nullptr;
 	
 };

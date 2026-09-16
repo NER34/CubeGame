@@ -47,7 +47,6 @@ void UChunkLoader::UpdatePlayerChunk(bool bForceUpdate)
 	if (bForceUpdate || NewPlayerChunk != CurrentPlayerChunk)
 	{
 		CurrentPlayerChunk = NewPlayerChunk;
-		/*bHasCurrentPlayerChunk = true;*/
 		RebuildChunkRequests(CurrentPlayerChunk);
 	}
 }
@@ -56,8 +55,7 @@ void UChunkLoader::RebuildChunkRequests(const FIntVector& CenterChunk)
 {
 	LoadQueue.Empty();
 	UnloadQueue.Empty();
-	/*QueuedLoadChunks.Reset();*/
-	/*QueuedUnloadChunks.Reset();*/
+	//LoadCollisionQueue.Empty();
 
 	TSet<FIntVector> WantedLoadChunks;
 	TSet<FIntVector> AllowedLoadedChunks;
@@ -83,15 +81,14 @@ void UChunkLoader::RebuildChunkRequests(const FIntVector& CenterChunk)
 	for (const FIntVector& ChunkPos : ChunksToLoad)
 	{
 		LoadQueue.Enqueue(ChunkPos);
-		/*QueuedLoadChunks.Add(ChunkPos);*/
+		//LoadCollisionQueue.Enqueue(ChunkPos);
 	}
 
 	for (const FIntVector& ChunkPos : LoadedChunks)
 	{
-		if (!AllowedLoadedChunks.Contains(ChunkPos)/* && !QueuedUnloadChunks.Contains(ChunkPos)*/)
+		if (!AllowedLoadedChunks.Contains(ChunkPos))
 		{
 			UnloadQueue.Enqueue(ChunkPos);
-			/*QueuedUnloadChunks.Add(ChunkPos);*/
 		}
 	}
 }
@@ -105,7 +102,7 @@ void UChunkLoader::ProcessChunkQueues()
 
 	ProcessUnloadQueue();
 	ProcessLoadQueue();
-
+	//ProcessLoadCollisionQueue();
 }
 
 void UChunkLoader::ProcessUnloadQueue()
@@ -115,12 +112,6 @@ void UChunkLoader::ProcessUnloadQueue()
 		FIntVector ChunkPos;
 		UnloadQueue.Dequeue(ChunkPos);
 
-		/*if (!QueuedUnloadChunks.Contains(ChunkPos))
-		{
-			continue;
-		}
-
-		QueuedUnloadChunks.Remove(ChunkPos);*/
 		if (!LoadedChunks.Contains(ChunkPos) || IsChunkPosInBounds(ChunkPos, CurrentPlayerChunk, UnloadRadius))
 		{
 			continue;
@@ -138,12 +129,6 @@ void UChunkLoader::ProcessLoadQueue()
 		FIntVector ChunkPos;
 		LoadQueue.Dequeue(ChunkPos);
 
-		/*if (!QueuedLoadChunks.Contains(ChunkPos))
-		{
-			continue;
-		}
-
-		QueuedLoadChunks.Remove(ChunkPos);*/
 		if (LoadedChunks.Contains(ChunkPos) || !IsChunkPosInBounds(ChunkPos, CurrentPlayerChunk, LoadRadius))
 		{
 			continue;
@@ -161,6 +146,30 @@ void UChunkLoader::ProcessLoadQueue()
 		}
 	}
 }
+
+/*
+void UChunkLoader::ProcessLoadCollisionQueue()
+{
+	for (int32 LoadsThisTick = 0; LoadsThisTick < MaxCollisionLoadsPerTick && !LoadQueue.IsEmpty(); ++LoadsThisTick)
+	{
+		FIntVector ChunkPos;
+		LoadCollisionQueue.Dequeue(ChunkPos);
+
+		if (!LoadedChunks.Contains(ChunkPos) || !IsChunkPosInBounds(ChunkPos, CurrentPlayerChunk, LoadRadius))
+		{
+			continue;
+		}
+
+		if (!ChunkGeneratorSubsystem->IsChunkPosInBounds(ChunkPos))
+		{
+			continue;
+		}
+
+		auto* ChunkActor = ChunkGeneratorSubsystem->GetChunkActor(ChunkPos);
+		ChunkActor->SetISMCollisionEnabled(true);
+	}
+}
+*/
 
 void UChunkLoader::BuildChunkSetInRadius(const FIntVector& CenterChunk, int32 Radius, TSet<FIntVector>& OutChunks) const
 {

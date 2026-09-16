@@ -6,7 +6,7 @@
 #include "ChunkActor.h"
 
 
-FVector UChunkHelperFunctions::CalculateChunkRealPosition(const FChunkSetup& ChunkSetup, FIntVector ChunkPos)
+FVector UChunkHelperFunctions::CalculateChunkRealPosition(const FChunkSetup& ChunkSetup, const FIntVector& ChunkPos)
 {
 	return {
 		ChunkSetup.BlockSize.X * ChunkSetup.ChunkSize.X * ChunkPos.X,
@@ -15,7 +15,7 @@ FVector UChunkHelperFunctions::CalculateChunkRealPosition(const FChunkSetup& Chu
 	};	
 }
 
-FIntVector UChunkHelperFunctions::GetChunkGridPosition(const FChunkSetup& ChunkSetup, FVector RealPos)
+FIntVector UChunkHelperFunctions::GetChunkGridPosition(const FChunkSetup& ChunkSetup, const FVector& RealPos)
 {
 	return {
 		FMath::FloorToInt32(RealPos.X / (ChunkSetup.ChunkSize.X * ChunkSetup.BlockSize.X)),
@@ -27,14 +27,23 @@ FIntVector UChunkHelperFunctions::GetChunkGridPosition(const FChunkSetup& ChunkS
 	};
 }
 
-bool UChunkHelperFunctions::IsChunkPosInBounds(FIntVector ChunkPos, FIntVector Min, FIntVector Max)
+FVector UChunkHelperFunctions::GetChunkRealPosition(const FChunkSetup& ChunkSetup, const FIntVector& Pos)
 {
-	return Min.X <= ChunkPos.X && ChunkPos.X <= Max.X
-		&& Min.Y <= ChunkPos.Y && ChunkPos.Y <= Max.Y
-		&& Min.Z <= ChunkPos.Z && ChunkPos.Z <= Max.Z;
+	return {
+		Pos.X * ChunkSetup.BlockSize.X * ChunkSetup.ChunkSize.X,
+		Pos.Y * ChunkSetup.BlockSize.Y * ChunkSetup.ChunkSize.Y,
+		Pos.Z * ChunkSetup.BlockSize.Z * ChunkSetup.ChunkSize.Z,
+	};
 }
 
-int32 UChunkHelperFunctions::GetBlockIDFromPos(const FChunkSetup& ChunkSetup, FIntVector Pos)
+bool UChunkHelperFunctions::IsPosInBounds(const FIntVector& Pos, const FIntVector& Min, const FIntVector& Max)
+{
+	return Min.X <= Pos.X && Pos.X < Max.X
+		&& Min.Y <= Pos.Y && Pos.Y < Max.Y
+		&& Min.Z <= Pos.Z && Pos.Z < Max.Z;
+}
+
+int32 UChunkHelperFunctions::GetBlockIDFromPos(const FChunkSetup& ChunkSetup, const FIntVector& Pos)
 {
 	return Pos.Z 
 		+ ChunkSetup.ChunkSize.Z * Pos.X 
@@ -50,21 +59,27 @@ FIntVector UChunkHelperFunctions::GetBlockPosFromID(const FChunkSetup& ChunkSetu
 	return {X, Y, Z};
 }
 
-FVector UChunkHelperFunctions::GetBlockRealPos(const AChunkActor* ChunkActor, const FIntVector& Pos)
+FVector UChunkHelperFunctions::GetBlockRealPos(const FChunkSetup& ChunkSetup, const FIntVector& ChunkPos, const FIntVector& BlockPos)
 {
-	FVector ChunkLocation = ChunkActor->GetActorLocation();
-	const auto& ChunkSetup = ChunkActor->GetChunkSetup();
+	FVector ChunkLocation = GetChunkRealPosition(ChunkSetup, ChunkPos);
 	return {
-		Pos.X * ChunkSetup.BlockSize.X + ChunkLocation.X,
-		Pos.Y * ChunkSetup.BlockSize.Y + ChunkLocation.Y,
-		Pos.Z * ChunkSetup.BlockSize.Z + ChunkLocation.Z,
+		BlockPos.X * ChunkSetup.BlockSize.X + ChunkLocation.X,
+		BlockPos.Y * ChunkSetup.BlockSize.Y + ChunkLocation.Y,
+		BlockPos.Z * ChunkSetup.BlockSize.Z + ChunkLocation.Z,
 	};
 }
 
-FIntVector UChunkHelperFunctions::GetBlockGridPos(const AChunkActor* ChunkActor, const FVector& RealPos)
+FVector UChunkHelperFunctions::GetBlockScale(const FChunkSetup& ChunkSetup)
 {
-	const auto& ChunkSetup = ChunkActor->GetChunkSetup();
-	FVector RelativeBlockLocation = RealPos - ChunkActor->GetActorLocation();
+	return ChunkSetup.BlockSize / 100.0f;
+}
+
+FIntVector UChunkHelperFunctions::GetBlockGridPos(
+	const FChunkSetup& ChunkSetup, const FIntVector& ChunkPos, const FVector& RealPos
+	)
+{
+	FVector ChunkLocation = GetChunkRealPosition(ChunkSetup, ChunkPos);
+	FVector RelativeBlockLocation = RealPos - ChunkLocation;
 	
 	FVector ChunkSize_Double = ToVector(ChunkSetup.ChunkSize);
 	FVector ChunkRealSize = ChunkSize_Double * ChunkSetup.BlockSize;

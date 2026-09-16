@@ -8,7 +8,7 @@ public class MyProject3 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		
-		OptimizeCode = CodeOptimization.Never;
+		//OptimizeCode = CodeOptimization.Never;
 	
 		PublicDependencyModuleNames.AddRange(new string[]
 		{

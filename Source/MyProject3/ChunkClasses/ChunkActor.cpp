@@ -15,6 +15,17 @@ AChunkActor::AChunkActor()
 	InstancedStaticMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedStaticMeshComponent"));
 	InstancedStaticMeshComponent->SetupAttachment(GetRootComponent());
 	InstancedStaticMeshComponent->NumCustomDataFloats = 1;
+	InstancedStaticMeshComponent->bNavigationRelevant = 0;
+}
+
+void AChunkActor::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UGameInstance* GameInstance = GetWorld()->GetGameInstance())
+	{
+		ChunkGeneratorSubsystem = GameInstance->GetSubsystem<UChunkGeneratorSubsystem>();
+	}
 }
 
 void AChunkActor::Initialize(const FChunkSetup& InChunkSetup, const FIntVector& InChunkPos)
@@ -27,22 +38,13 @@ void AChunkActor::Initialize(const FChunkSetup& InChunkSetup, const FIntVector& 
 	ChunkData.Reset();
 	ChunkData.SetNum(ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y * ChunkSetup.ChunkSize.Z);
 	
-	NoiseGenerator.SetSeed(ChunkSetup.RandomSeed);
-	NoiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-	NoiseGenerator.SetFrequency(0.01f);
-	NoiseGenerator.SetFractalType(FastNoiseLite::FractalType_FBm);
-	NoiseGenerator.SetFractalOctaves(6);
-	NoiseGenerator.SetFractalLacunarity(1.94f);
-	NoiseGenerator.SetFractalGain(0.46f);
-	NoiseGenerator.SetFractalWeightedStrength(0.38f);
-	
 	FVector ChunkLocation = UChunkHelperFunctions::CalculateChunkRealPosition(ChunkSetup, ChunkPos);
-	GenerateChunkData(ChunkLocation);
-	GenerateInstances();
-	
 	SetActorLocation(ChunkLocation);
 	SetActorHiddenInGame(false);
 	SetActorTickEnabled(true);
+	
+	GenerateChunkData();
+	GenerateInstances();
 	
 	OnInitialize(ChunkSetup, ChunkPos);
 }
@@ -55,17 +57,41 @@ void AChunkActor::Deinitialize()
 	OnDeinitialize();
 }
 
+void AChunkActor::GenerateChunkData()
+{	
+	ParallelFor(ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y, 
+		[this](int32 ID)
+		{
+			int32 X = ID % ChunkSetup.ChunkSize.X;
+			int32 Y = ID / ChunkSetup.ChunkSize.X;
+			
+			for (int32 Z = 0; Z < ChunkSetup.ChunkSize.Z; Z++)
+			{
+				FIntVector BlockPos = {X, Y, Z};
+				int32 BlockID = GetBlockIDFromPos({X, Y, Z});
+				ChunkData[BlockID] = ChunkGeneratorSubsystem->GenerateBlockType(ChunkPos, BlockPos);
+			}
+		}
+	);
+}
+
 void AChunkActor::CreateInstance(int32 BlockID)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AChunkActor::CreateInstance"));
 	FVector BlockPosition_Double = UChunkHelperFunctions::ToVector(GetBlockPosFromID(BlockID));
 	FVector BlockRelativeLocation = BlockPosition_Double * ChunkSetup.BlockSize;
 			
 	FTransform InstanceTransform;
 	InstanceTransform.SetLocation(BlockRelativeLocation);
-	InstanceTransform.SetScale3D(ChunkSetup.BlockSize / 100.f);	
+	InstanceTransform.SetScale3D(UChunkHelperFunctions::GetBlockScale(ChunkSetup));
 
 	FBlockInstanceData InstanceData;
-	InstanceData.InstanceId = InstancedStaticMeshComponent->AddInstanceById(InstanceTransform, false);
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AddInstanceById"));
+		InstanceData.InstanceId = InstancedStaticMeshComponent->AddInstancesById(
+			{InstanceTransform}, false, false
+			)[0];
+	}
 	InstanceData.BlockType = ChunkData[BlockID];
 	
 	VisibleInstances.Add(BlockID, InstanceData);
@@ -81,40 +107,65 @@ void AChunkActor::ActualizeInstanceData(const FBlockInstanceData& InstanceData) 
 
 void AChunkActor::GenerateInstances()
 {
-	for (int ID = 0; ID < ChunkData.Num(); ID++)
+	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AChunkActor::GenerateInstances"));
+	TArray<int32> VisibleBlockIds;
+	TArray<FTransform> InstanceTransforms;
+
+	const int32 BlockCount = ChunkData.Num();
+	VisibleBlockIds.Reserve(BlockCount);
+	InstanceTransforms.Reserve(BlockCount);
 	{
-		if (IsBlockVisible(GetBlockPosFromID(ID)))
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("CollectVisibleInstances"));
+		for (int32 ID = 0; ID < BlockCount; ++ID)
 		{
-			CreateInstance(ID);
-			ActualizeInstanceData(VisibleInstances[ID]);
+			if (!IsBlockVisible(GetBlockPosFromID(ID)))
+			{
+				continue;
+			}
+
+			const FVector BlockPosition = UChunkHelperFunctions::ToVector(GetBlockPosFromID(ID));
+			const FVector BlockRelativeLocation = BlockPosition * ChunkSetup.BlockSize;
+
+			FTransform InstanceTransform;
+			InstanceTransform.SetLocation(BlockRelativeLocation);
+			InstanceTransform.SetScale3D(UChunkHelperFunctions::GetBlockScale(ChunkSetup));
+
+			VisibleBlockIds.Add(ID);
+			InstanceTransforms.Add(InstanceTransform);
+		}
+	}
+	
+	if (InstanceTransforms.IsEmpty())
+	{
+		return;
+	}
+	
+	TArray<FPrimitiveInstanceId> InstanceIds;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("AddInstancesById"));
+		InstanceIds = InstancedStaticMeshComponent->AddInstancesById(
+			MakeArrayView(InstanceTransforms),
+			false, 
+			false
+		);
+	}
+	
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("InstanceDataActualization"));
+		for (int32 Index = 0; Index < InstanceIds.Num(); ++Index)
+		{
+			const int32 BlockID = VisibleBlockIds[Index];
+
+			FBlockInstanceData InstanceData;
+			InstanceData.InstanceId = InstanceIds[Index];
+			InstanceData.BlockType = ChunkData[BlockID];
+
+			VisibleInstances.Add(BlockID, InstanceData);
+			ActualizeInstanceData(InstanceData);
 		}
 	}
 }
 
-void AChunkActor::GenerateChunkData(const FVector& ChunkLocation)
-{	
-	ParallelFor(ChunkSetup.ChunkSize.X * ChunkSetup.ChunkSize.Y, [this, ChunkLocation](int32 ID)
-	{
-		int32 X = ID % ChunkSetup.ChunkSize.X;
-		int32 Y = ID / ChunkSetup.ChunkSize.X;
-		
-		double XLocation = X / 100.0 * ChunkSetup.BlockSize.X + ChunkLocation.X;
-		double YLocation = Y / 100.0 * ChunkSetup.BlockSize.Y + ChunkLocation.Y;
-		
-		float ZHeight = NoiseGenerator.GetNoise(XLocation, YLocation);
-		// (-1.0, 1.0) -> (0.0, 1.0)
-		ZHeight = (ZHeight + 1.0f) / 2.0f;
-		// To avoid division by zero
-		ZHeight += 0.01f;
-		
-		for (int32 Z = 0; Z < ChunkSetup.ChunkSize.Z; Z++)
-		{
-			float CurrentZHeight = (float)Z / ChunkSetup.ChunkSize.Z;
-			ChunkData[GetBlockIDFromPos({X, Y, Z})] = GetBlockTypeByHeight(CurrentZHeight / ZHeight);
-		}
-	}
-	);
-}
 
 void AChunkActor::ActualizeModifiedInstance(const FIntVector& ModifiedBlock)
 {
@@ -148,14 +199,6 @@ void AChunkActor::UpdateNeighborInstancesVisibility(const FIntVector& ModifiedBl
 	{
 		ActualizeModifiedInstance(NeighborBlock);
 	}
-}
-
-EBlockType AChunkActor::GetBlockTypeByHeight(float Height)
-{
-	if (Height <= 0.33f) { return EBlockType::Stone; }
-	if (Height <= 0.66f) { return EBlockType::Grass; }
-	if (Height <= 1.0f) { return EBlockType::Snow; }
-	return EBlockType::Air;
 }
 
 const TArray<EBlockType>& AChunkActor::GetChunkData() const
@@ -197,7 +240,7 @@ EBlockType AChunkActor::GetBlockType(const FIntVector& Pos) const
 {
 	if (!IsBlockPosInChunkBounds(Pos))
 	{
-		return EBlockType::None;
+		return EBlockType::Air;
 	}
 	
 	int32 ID = GetBlockIDFromPos(Pos);
@@ -206,9 +249,11 @@ EBlockType AChunkActor::GetBlockType(const FIntVector& Pos) const
 
 bool AChunkActor::IsBlockPosInChunkBounds(const FIntVector& BlockPos) const
 {
-	return 0 <= BlockPos.X && BlockPos.X < ChunkSetup.ChunkSize.X
-		&& 0 <= BlockPos.Y && BlockPos.Y < ChunkSetup.ChunkSize.Y
-		&& 0 <= BlockPos.Z && BlockPos.Z < ChunkSetup.ChunkSize.Z;
+	return UChunkHelperFunctions::IsPosInBounds(
+		BlockPos, 
+		{0,0,0}, 
+		ChunkSetup.ChunkSize
+		);
 }
 
 bool AChunkActor::IsAirBlock(const FIntVector& BlockPos) const
@@ -278,6 +323,20 @@ FIntVector AChunkActor::GetBlockPosFromID(int32 ID) const
 
 FVector AChunkActor::GetBlockRealPos(const FIntVector& Pos) const
 {
-	return UChunkHelperFunctions::GetBlockRealPos(this, Pos);
+	return UChunkHelperFunctions::GetBlockRealPos(ChunkSetup, ChunkPos, Pos);
 }
+
+FIntVector AChunkActor::GetBlockGridPos(const FVector& Pos) const
+{
+	return UChunkHelperFunctions::GetBlockGridPos(ChunkSetup, ChunkPos, Pos);
+}
+
+/*
+void AChunkActor::SetISMCollisionEnabled(bool bEnable)
+{
+	InstancedStaticMeshComponent->SetCollisionEnabled(
+		bEnable ? ECollisionEnabled::Type::QueryAndPhysics : ECollisionEnabled::Type::NoCollision
+		);
+}
+*/
 

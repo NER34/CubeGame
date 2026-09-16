@@ -17,27 +17,33 @@ class MYPROJECT3_API UChunkHelperFunctions : public UBlueprintFunctionLibrary
 public:
 	
 	UFUNCTION(BlueprintPure)
-	static FVector CalculateChunkRealPosition(const FChunkSetup& ChunkSetup, FIntVector ChunkPos);
+	static FVector CalculateChunkRealPosition(const FChunkSetup& ChunkSetup, const FIntVector& ChunkPos);
 	
 	UFUNCTION(BlueprintPure)
-	static FIntVector GetChunkGridPosition(const FChunkSetup& ChunkSetup, FVector RealPos);
+	static FIntVector GetChunkGridPosition(const FChunkSetup& ChunkSetup, const FVector& RealPos);
 	
 	UFUNCTION(BlueprintPure)
-	static bool IsChunkPosInBounds(FIntVector ChunkPos, FIntVector Min, FIntVector Max);
+	static FVector GetChunkRealPosition(const FChunkSetup& ChunkSetup, const FIntVector& Pos);
 	
 	UFUNCTION(BlueprintPure)
-	static int32 GetBlockIDFromPos(const FChunkSetup& ChunkSetup, FIntVector Pos);
+	static bool IsPosInBounds(const FIntVector& Pos, const FIntVector& Min, const FIntVector& Max);
+	
+	UFUNCTION(BlueprintPure)
+	static int32 GetBlockIDFromPos(const FChunkSetup& ChunkSetup, const FIntVector& Pos);
 
 	UFUNCTION(BlueprintPure)
 	static FIntVector GetBlockPosFromID(const FChunkSetup& ChunkSetup, int32 ID);
 	
 	UFUNCTION(BlueprintPure)
-	static FVector GetBlockRealPos(const AChunkActor* ChunkActor, const FIntVector& Pos);
+	static FVector GetBlockRealPos(const FChunkSetup& ChunkSetup, const FIntVector& ChunkPos, const FIntVector& BlockPos);
+	
+	UFUNCTION(BlueprintPure)
+	static FVector GetBlockScale(const FChunkSetup& ChunkSetup);
 	
 	// This one is not ready yet, I need to think how to detect the right block, no metter
 	// from which side i'm pointing to it
 	UFUNCTION(BlueprintPure)
-	static FIntVector GetBlockGridPos(const AChunkActor* ChunkActor, const FVector& RealPos);
+	static FIntVector GetBlockGridPos(const FChunkSetup& ChunkSetup, const FIntVector& ChunkPos, const FVector& RealPos);
 	
 	UFUNCTION(BlueprintPure)
 	static FVector ToVector(const FIntVector& IntVec);

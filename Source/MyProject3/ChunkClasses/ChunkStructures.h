@@ -13,8 +13,7 @@ enum class EBlockType : uint8
 	Stone,
 	Grass,
 	Snow,
-	
-	None,
+	Bedrock,
 };
 
 USTRUCT(BlueprintType)
@@ -28,9 +27,6 @@ struct FChunkSetup
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FIntVector ChunkSize = {8, 8, 8};
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 RandomSeed = 0;
-	
 };
 
 USTRUCT(BlueprintType)
@@ -39,13 +35,19 @@ struct FChunkGeneratorSetup
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Seed = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bGenerateRandomSeed = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FChunkSetup ChunkSetup;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FIntVector ChunkBoundsMin = {INT32_MIN, INT32_MIN, 0};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntVector ChunkBoundsMax = {INT32_MAX, INT32_MAX, 0};
+	FIntVector ChunkBoundsMax = {INT32_MAX, INT32_MAX, 1};
 	
 };
 
@@ -58,7 +60,7 @@ struct FBlockInstanceData
 	FPrimitiveInstanceId InstanceId;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EBlockType BlockType = EBlockType::None;
+	EBlockType BlockType = EBlockType::Air;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bHighlighted = false;

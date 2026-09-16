@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "ChunkStructures.h"
+#include "MyProject3/ThirdParty/FastNoiseLite.h"
 #include "ChunkGeneratorSubsystem.generated.h"
 
 
@@ -45,6 +46,8 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	int32 GetNumInactiveChunks() const;
+	
+	EBlockType GenerateBlockType(FIntVector ChunkPos, FIntVector BlockPos) const;
 
 private:
 	
@@ -60,5 +63,7 @@ private:
 	TArray<TObjectPtr<AChunkActor>> InactiveChunkActors;
 	
 	FChunkGeneratorSetup ChunkGeneratorSetup;
+	
+	FastNoiseLite NoiseGenerator;
 	
 };
